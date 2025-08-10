@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+#vs-app {
+  all: initial; /* resets most inherited styles */
+  all: unset; /* or try this if initial causes issues */
+  display: block;
+  font-family: system-ui, sans-serif; /* reapply desired defaults */
+  color: #000;
+}

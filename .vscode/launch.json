@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "Listen for Xdebug",
+            "type": "php",
+            "request": "launch",
+            "port": 9003, // Must match xdebug.client_port in your php.ini
+            // "pathMappings": {
+            //     "/var/www/html/wordpress2/public_html/wp-content/plugins/interactive-product-configurator": "${workspaceFolder}" // ⬅️ CRITICAL for mapping WSL path to VS Code path
+            // }
+        }
+    ]
+}
