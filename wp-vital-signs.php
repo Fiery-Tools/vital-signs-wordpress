@@ -16,11 +16,17 @@ define( 'VS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'VS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 // Load classes
-require_once VS_PLUGIN_DIR . 'includes/class-vs-rest.php';
-require_once VS_PLUGIN_DIR . 'includes/class-vs-admin.php';
+require_once VS_PLUGIN_DIR . 'includes/wp_vital_signs.php';
+require_once VS_PLUGIN_DIR . 'includes/wp_vital_signs_rest.php';
 
-// Init
-add_action( 'plugins_loaded', function() {
-    new VS_REST();
-    new VS_Admin();
-});
+// // Init
+// add_action( 'plugins_loaded', function() {
+//     new VS_REST();
+//     new VS_Admin();
+// });
+
+register_activation_hook( __FILE__, array( 'WP_Vital_Signs', 'activate' ) );
+
+// Initialize the plugin
+add_action( 'plugins_loaded', array( 'WP_Vital_Signs', 'get_instance' ) );
+add_action( 'plugins_loaded', array( 'WP_Vital_Signs_REST', 'get_instance' ) );

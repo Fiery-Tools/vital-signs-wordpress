@@ -5,9 +5,7 @@ import App from './App';
 import './globals.css';
 
 ReactDOM.createRoot(document.getElementById('vs-admin-root')).render(
-  <React.StrictMode>
-    <HashRouter>
-      <App />
-    </HashRouter>
-  </React.StrictMode>
+  <HashRouter>
+    <App />
+  </HashRouter>
 );
