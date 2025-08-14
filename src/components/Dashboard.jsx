@@ -2,7 +2,7 @@ import React from 'react';
 import { Shield, FileCheck, AlertTriangle, CheckCircle, Clock, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const Dashboard = ({ vulnerabilities, coreFileScan }) => {
+const Dashboard = ({ vulnerabilities, coreFileScan, status }) => {
   // Mock data for demonstration - replace with your actual props
   const mockVulnerabilities = vulnerabilities || {
     lastScanned: '2024-01-15T10:30:00Z',
@@ -38,6 +38,7 @@ const Dashboard = ({ vulnerabilities, coreFileScan }) => {
 
     return (
       <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
+        <pre>{JSON.stringify(vulnerabilities)}</pre>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-red-50 rounded-lg">
@@ -176,6 +177,7 @@ const Dashboard = ({ vulnerabilities, coreFileScan }) => {
         <h1 className="text-3xl font-bold text-slate-800">Security Dashboard</h1>
         <p className="mt-1 text-slate-600">Monitor your WordPress site's security status and scan history</p>
       </div>
+
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

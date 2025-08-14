@@ -60,17 +60,53 @@ class WP_Vital_Signs_REST
       },
     ]);
   }
-
   public function get_status()
   {
-    return [
-      'php_version' => phpversion(),
-      'wp_version'  => get_bloginfo('version'),
-      'plugins'   => count(get_plugins()),
-      'timestamp'   => current_time('mysql'),
-    ];
-  }
+    global $wpdb;
 
+    $format_bool = function ($value) {
+      return $value ? 'Yes' : 'No';
+    };
+
+    $status_data = [
+      // Section 1: WordPress Environment
+      [
+        ['key' => 'WordPress Version', 'value' => get_bloginfo('version')],
+        ['key' => 'Site URL', 'value' => get_site_url()],
+        ['key' => 'Home URL', 'value' => get_home_url()],
+        ['key' => 'Multisite', 'value' => $format_bool(is_multisite())],
+        ['key' => 'Active Theme', 'value' => wp_get_theme()->get('Name')],
+        ['key' => 'Theme Version', 'value' => wp_get_theme()->get('Version')],
+        ['key' => 'Debug Mode', 'value' => $format_bool(defined('WP_DEBUG') && WP_DEBUG)],
+        ['key' => 'Memory Limit', 'value' => WP_MEMORY_LIMIT],
+        ['key' => 'SSL Enabled', 'value' => $format_bool(is_ssl())],
+      ],
+      // Section 2: Server Environment
+      [
+        ['key' => 'PHP Version', 'value' => phpversion()],
+        ['key' => 'Web Server', 'value' => isset($_SERVER['SERVER_SOFTWARE']) ? $_SERVER['SERVER_SOFTWARE'] : 'N/A'],
+        ['key' => 'MySQL Version', 'value' => $wpdb->db_version()],
+        ['key' => 'PHP Memory Limit', 'value' => ini_get('memory_limit')],
+        ['key' => 'PHP Max Execution Time', 'value' => ini_get('max_execution_time')],
+        ['key' => 'PHP Post Max Size', 'value' => ini_get('post_max_size')],
+        ['key' => 'PHP Upload Max Filesize', 'value' => ini_get('upload_max_filesize')],
+        ['key' => 'Timezone', 'value' => get_option('timezone_string') ?: 'UTC'],
+        ['key' => 'Timestamp (UTC)', 'value' => current_time('mysql')],
+      ],
+      // Section 3: Content & Data
+      [
+        ['key' => 'Total Plugins', 'value' => count(get_plugins())],
+        ['key' => 'Active Plugins', 'value' => count((array) get_option('active_plugins'))],
+        ['key' => 'User Count', 'value' => count_users()['total_users']],
+        ['key' => 'Published Posts', 'value' => wp_count_posts()->publish],
+        ['key' => 'Published Pages', 'value' => wp_count_posts('page')->publish],
+        ['key' => 'Total Comments', 'value' => wp_count_comments()->total_comments],
+        ['key' => 'Database Prefix', 'value' => $wpdb->prefix],
+      ],
+    ];
+
+    return $status_data;
+  }
 
   function getPostData()
   {

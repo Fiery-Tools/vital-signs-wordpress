@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import Vulnerabilities from './components/Vulnerabilities';
 import Roadmap from './components/Roadmap';
 import CoreFiles from './components/CoreFiles';
+import Header from './components/Header';
+import InfoPage from './components/Info';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import {
@@ -16,13 +18,11 @@ import {
   Lock,
   Globe,
   Zap,
-  Home
+  Home,
+  Info
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 
-function Foo() {
-  return <h2>Foo Component</h2>;
-}
 
 export default function App() {
   const [status, setStatus] = useState(null);
@@ -35,8 +35,15 @@ export default function App() {
       path: '/',
       label: 'Home',
       icon: Home,
-      component: <Dashboard toast={toast} />
+      component: <Dashboard status={status} toast={toast} />
     },
+    {
+      path: '/info',
+      label: 'Info',
+      icon: Info,
+      component: <InfoPage status={status} />
+    },
+
     {
       path: '/vulnerabilities',
       label: 'Vulnerabilities',
@@ -106,14 +113,15 @@ export default function App() {
     // }
   ];
 
+
   useEffect(() => {
-    fetch(VS_DATA.rest_url + '/status', {
+    fetch('/wp-json/vital-signs/v1/status', {
       headers: { 'X-WP-Nonce': VS_DATA.nonce }
     })
     .then(res => res.json())
     .then(setStatus);
 
-    fetch(VS_DATA.rest_url + '/vulnerabilities', {
+    fetch('/wp-json/vital-signs/v1/vulnerabilities', {
       headers: { 'X-WP-Nonce': VS_DATA.nonce }
     })
     .then(res => res.json())
@@ -130,31 +138,7 @@ export default function App() {
   return (
     <div id="vs-app" className="min-h-screen bg-gray-50">
       {/* Tab Navigation */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8 overflow-x-auto">
-            {navigationTabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = location.pathname === tab.path;
-
-              return (
-                <Link
-                  key={tab.path}
-                  to={tab.path}
-                  className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
-                    isActive
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span>{tab.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </nav>
+      <Header tabs={navigationTabs} currentPath={location.pathname}/>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

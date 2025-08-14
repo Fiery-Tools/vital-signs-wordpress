@@ -15,7 +15,7 @@ export default defineConfig({
     },
     server: {
         cors: true,
-        origin: 'http://wp.local:5173',
+        origin: 'http://winds:5173',
         port: 5173,
         host: '0.0.0.0',
         strictPort: true,
