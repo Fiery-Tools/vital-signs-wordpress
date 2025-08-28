@@ -20,8 +20,8 @@ import {
   Zap,
   Home,
   Info
-} from 'lucide-react';
-import Dashboard from './components/Dashboard';
+} from '@/lib/icons';
+import HomePage from './components/Home';
 
 
 export default function App() {
@@ -35,7 +35,7 @@ export default function App() {
       path: '/',
       label: 'Home',
       icon: Home,
-      component: <Dashboard status={status} toast={toast} />
+      component: <HomePage status={status} toast={toast} />
     },
     {
       path: '/info',
@@ -62,55 +62,6 @@ export default function App() {
       icon: Map,
       component: <Roadmap />
     },
-    // Placeholder tabs for the 8 additional components you'll add
-    // {
-    //   path: '/security-scan',
-    //   label: 'Security Scan',
-    //   icon: Lock,
-    //   component: <Foo />
-    // },
-    // {
-    //   path: '/performance',
-    //   label: 'Performance',
-    //   icon: Zap,
-    //   component: <Foo />
-    // },
-    // {
-    //   path: '/analytics',
-    //   label: 'Analytics',
-    //   icon: BarChart3,
-    //   component: <Foo />
-    // },
-    // {
-    //   path: '/users',
-    //   label: 'User Management',
-    //   icon: Users,
-    //   component: <Foo />
-    // },
-    // {
-    //   path: '/database',
-    //   label: 'Database',
-    //   icon: Database,
-    //   component: <Foo />
-    // },
-    // {
-    //   path: '/notifications',
-    //   label: 'Notifications',
-    //   icon: Bell,
-    //   component: <Foo />
-    // },
-    // {
-    //   path: '/network',
-    //   label: 'Network',
-    //   icon: Globe,
-    //   component: <Foo />
-    // },
-    // {
-    //   path: '/settings',
-    //   label: 'Settings',
-    //   icon: Settings,
-    //   component: <Foo />
-    // }
   ];
 
 
@@ -118,14 +69,14 @@ export default function App() {
     fetch('/wp-json/vital-signs/v1/status', {
       headers: { 'X-WP-Nonce': VS_DATA.nonce }
     })
-    .then(res => res.json())
-    .then(setStatus);
+      .then(res => res.json())
+      .then(setStatus);
 
     fetch('/wp-json/vital-signs/v1/vulnerabilities', {
       headers: { 'X-WP-Nonce': VS_DATA.nonce }
     })
-    .then(res => res.json())
-    .then(setVulnerabilities);
+      .then(res => res.json())
+      .then(setVulnerabilities);
   }, []);
 
   if (!status) return (
@@ -136,24 +87,27 @@ export default function App() {
   );
 
   return (
-    <div id="vs-app" className="min-h-screen bg-gray-50">
-      {/* Tab Navigation */}
-      <Header tabs={navigationTabs} currentPath={location.pathname}/>
+    <div id="vs-plugin-wrapper">
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <Routes>
-          {navigationTabs.map((tab) => (
-            <Route
-              key={tab.path}
-              path={tab.path}
-              element={tab.component}
-            />
-          ))}
-        </Routes>
-      </main>
+      <div id="vs-app" className="min-h-screen bg-primary">
+        {/* Tab Navigation */}
+        <Header tabs={navigationTabs} currentPath={location.pathname} />
 
-      <Toaster position="bottom-right" reverseOrder={false} />
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto p-4">
+          <Routes>
+            {navigationTabs.map((tab) => (
+              <Route
+                key={tab.path}
+                path={tab.path}
+                element={tab.component}
+              />
+            ))}
+          </Routes>
+        </main>
+
+        <Toaster position="bottom-right" reverseOrder={false} />
+      </div>
     </div>
   );
 }

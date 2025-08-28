@@ -1,4 +1,5 @@
 import React from 'react';
+import TopCard from './TopCard';
 
 // This is a sample data structure. In a real app, you would fetch this from your API.
 // const [statusData, setStatusData] = useState([]);
@@ -16,16 +17,16 @@ const sampleStatusData = [
 ];
 
 const SectionTable = ({ title, data }) => (
-  <div className="bg-white rounded-lg shadow-md overflow-hidden ring-1 ring-black ring-opacity-5">
+  <div className="bg-white rounded-lg shadow-md">
     {/* Card Header */}
-    <div className="p-4 bg-gray-50 border-b border-gray-200">
+    <div className="px-4 py-0 bg-gray-50 border-b border-gray-200">
       <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
     </div>
 
     {/* Table Body */}
     <div className="divide-y divide-gray-200">
       {data.map((item, index) => (
-        <div key={index} className="px-4 py-3 flex justify-between items-center text-sm">
+        <div key={index} className="px-4 py-0 flex justify-between items-center text-sm">
           <p className="font-medium text-gray-600">{item.key}</p>
           <p className="text-gray-800 text-right">{String(item.value)}</p>
         </div>
@@ -43,8 +44,8 @@ const WpStatusGrid = ({ statusData }) => {
   }
 
   return (
-    <div className="p-4 sm:p-6 bg-gray-100 min-h-screen">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    // <div className="p-4 sm:p-6 bg-gray-100 min-h-screen">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {statusData.map((sectionData, index) => (
           <SectionTable
             key={index}
@@ -53,7 +54,7 @@ const WpStatusGrid = ({ statusData }) => {
           />
         ))}
       </div>
-    </div>
+    // </div>
   );
 };
 
@@ -64,7 +65,8 @@ const Info = ({status}) => {
   const data = sampleStatusData;
 
   return (
-    <div>
+    <div className="w-full bg-secondary p-4">
+      <TopCard title="WP Vital Signs | Info" subtitle="Information about your WordPress site" />
       <WpStatusGrid statusData={status} />
     </div>
   );

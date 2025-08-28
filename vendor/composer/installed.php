@@ -1,0 +1,41 @@
+<?php return array(
+    'root' => array(
+        'name' => '__root__',
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => '5703073dee8263f1221be83f7a195a3920540a16',
+        'type' => 'library',
+        'install_path' => __DIR__ . '/../../',
+        'aliases' => array(),
+        'dev' => true,
+    ),
+    'versions' => array(
+        '__root__' => array(
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => '5703073dee8263f1221be83f7a195a3920540a16',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../../',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'halaxa/json-machine' => array(
+            'pretty_version' => '1.2.5',
+            'version' => '1.2.5.0',
+            'reference' => 'd0f84abf79ac98145d478b66d2bcf363d706477c',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../halaxa/json-machine',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'salsify/json-streaming-parser' => array(
+            'pretty_version' => 'v8.3.1',
+            'version' => '8.3.1.0',
+            'reference' => 'c0cfac990eb4e917c71b0ad0146546f0a4da0c2f',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../salsify/json-streaming-parser',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+    ),
+);

@@ -1,5 +1,9 @@
 <?php
 if (! defined('ABSPATH')) exit;
+
+use JsonMachine\Items;
+use JsonMachine\JsonDecoder\ExtJsonDecoder;
+
 // http://wp.local/wp-json/vital-signs/v1/status
 class WP_Vital_Signs_REST
 {
@@ -58,6 +62,20 @@ class WP_Vital_Signs_REST
       'permission_callback' => function () {
         return current_user_can('activate_plugins');
       },
+    ]);
+    register_rest_route('vital-signs/v1', '/last-checks', [
+      'methods'  => 'GET',
+      'callback' => [$this, 'get_last_checks'],
+      'permission_callback' => function () {
+        return current_user_can('manage_options');
+      }
+    ]);
+    register_rest_route('vital-signs/v1', '/core-files-scan-complete', [
+      'methods'  => 'POST',
+      'callback' => [$this, 'save_core_files_check'],
+      'permission_callback' => function () {
+        return current_user_can('manage_options');
+      }
     ]);
   }
   public function get_status()
@@ -139,46 +157,103 @@ class WP_Vital_Signs_REST
   public function get_checksums()
   {
     global $wp_version;
+    // todo check locale
+    $api_url = 'https://api.wordpress.org/core/checksums/1.0/?version=' . $wp_version . '&locale=en_US';
 
-    $checksums = get_core_checksums($wp_version, 'en_US');
-    return $checksums;
+    $upload_dir      = wp_upload_dir();
+    $cache_file_path = $upload_dir['basedir'] . '/chechsums.json';
+    $cache_lifetime  = 60 * 24 * HOUR_IN_SECONDS;
+
+    // Step 1: Download and cache the file (same as before)
+    // This part ensures the file is available locally without using memory for the download.
+    if (! file_exists($cache_file_path) || (time() - filemtime($cache_file_path)) > $cache_lifetime) {
+      $response = wp_remote_get($api_url, [
+        'stream'   => true,
+        'filename' => $cache_file_path,
+        'timeout'  => 300,
+      ]);
+
+      if (is_wp_error($response) || 200 !== wp_remote_retrieve_response_code($response)) {
+        if (! file_exists($cache_file_path)) {
+          return ['error' => 'Could not retrieve core files data.'];
+        }
+      }
+    }
+
+    if (! is_readable($cache_file_path)) {
+      return ['error' => 'Cached core files data file is not readable.'];
+    }
+
+
+
+
+    header('Content-Type: application/json; charset=utf-8');
+    header('Content-Length: ' . filesize( $cache_file_path ));
+
+    // It's crucial to clear any output buffering that might be active
+    if (ob_get_level()) {
+        ob_end_clean();
+    }
+
+    $file_handle = fopen( $cache_file_path, 'rb' );
+    if ( $file_handle !== false ) {
+      // Stream the file and immediately exit
+      fpassthru( $file_handle );
+      fclose($file_handle);
+    }
+
+    // if ( is_wp_error( $response ) ) {
+    //     wp_send_json_error(
+    //         array(
+    //             'message' => 'Failed to connect to the WordPress.org API.',
+    //             'error'   => $response->get_error_message(),
+    //         ),
+    //         500 // Internal Server Error
+    //     );
+    //     return; // Stop execution
+    // }
+
+    // $json_body = wp_remote_retrieve_body($response);
+    // return $json_body;
+
+    // $checksums = get_core_checksums($wp_version, 'en_US');
+    // return $checksums;
   }
 
+  //    $url = 'https://api.wordpress.org/core/checksums/1.0/?version=6.8.2&locale=en_US';
 
+  /**
+   * Processes a chunk of files to verify their checksums.
+   * Note: This version has caching removed as per request, as the primary
+   * performance bottleneck was identified on the client-side.
+   *
+   * @return array An array of files with their verification status.
+   */
   public function checksums_for_chunk()
   {
-    global $wp_version;
     $_post = $this->getPostData();
-    $chunk = $_post["chunk"];
-    $checksums = get_core_checksums($wp_version, 'en_US');
+    $chunk = isset($_post["chunk"]) ? $_post["chunk"] : [];
     $retval = [];
+
     foreach ($chunk as $file) {
-      $status = 'failed';
+      $file_path = ABSPATH . $file['name'];
+      $status = 'unknown';
 
-      if (!isset($checksums[$file['name']])) {
-        $retval[] = [
-          'name' => $file['name'],
-          'status' => 'unknown',
-        ];
-        continue;
-      }
-
-      if ($checksums[$file['name']] === md5_file($file['name'])) {
-        $status = 'verified';
+      if (!file_exists($file_path)) {
+        $status = 'missing';
       } else {
-        if (!file_exists($file['name'])) {
-          $status = 'missing';
-        }
-        if (preg_match('/twentytwentythree/', $file['name'])) {
-          $status = 'failed';
+        // Direct, uncached MD5 calculation.
+        if (md5_file($file_path) === $file['checksum']) {
+          $status = 'verified';
         } else {
-          $status = 'unknown';
+          $status = 'failed';
         }
       }
 
       $retval[] = [
         'name' => $file['name'],
         'status' => $status,
+        'checksum' => $file['checksum']
       ];
     }
 
@@ -187,56 +262,120 @@ class WP_Vital_Signs_REST
 
   public function get_vulnerabilities()
   {
+    // $vulnerabilities_found = [
+    //   'plugins' => [],
+    //   'themes' => [],
+    // ];
+
+    // // Get cached vulnerability data
+    // $vulnerability_data = get_transient('wordfence_vulnerability_data');
+
+    // // If no cache, fetch from Wordfence API
+    // if (false === $vulnerability_data) {
+    //   $response = wp_remote_get('https://www.wordfence.com/api/intelligence/v2/vulnerabilities/production');
+
+    //   if (is_wp_error($response) || 200 !== wp_remote_retrieve_response_code($response)) {
+    //     return ['error' => 'Could not retrieve vulnerability data from Wordfence.'];
+    //   }
+
+    //   $vulnerability_data = json_decode(wp_remote_retrieve_body($response), true);
+
+    //   if (! $vulnerability_data) {
+    //     return ['error' => 'Could not parse vulnerability data.'];
+    //   }
+
+    //   // Cache the data for 12 hours
+    //   set_transient('wordfence_vulnerability_data', $vulnerability_data, 12 * HOUR_IN_SECONDS);
+    // }
+
+    // // Get installed plugins
+    // if (! function_exists('get_plugins')) {
+    //   require_once ABSPATH . 'wp-admin/includes/plugin.php';
+    // }
+    // $installed_plugins = get_plugins();
+    // $active_plugins = get_option('active_plugins');
+
+
+    // // Get active theme
+    // $active_theme = wp_get_theme();
+
     $vulnerabilities_found = [
       'plugins' => [],
-      'themes' => [],
+      'themes'  => [],
     ];
 
-    // Get cached vulnerability data
-    $vulnerability_data = get_transient('wordfence_vulnerability_data');
+    $upload_dir      = wp_upload_dir();
+    $cache_file_path = $upload_dir['basedir'] . '/vulnerabilities.json';
+    $cache_lifetime  = 60 * 24 * HOUR_IN_SECONDS;
 
-    // If no cache, fetch from Wordfence API
-    if (false === $vulnerability_data) {
-      $response = wp_remote_get('https://www.wordfence.com/api/intelligence/v2/vulnerabilities/production');
+    // Step 1: Download and cache the file (same as before)
+    // This part ensures the file is available locally without using memory for the download.
+    if (! file_exists($cache_file_path) || (time() - filemtime($cache_file_path)) > $cache_lifetime) {
+      $response = wp_remote_get('https://www.wordfence.com/api/intelligence/v2/vulnerabilities/production', [
+        'stream'   => true,
+        'filename' => $cache_file_path,
+        'timeout'  => 300,
+      ]);
 
       if (is_wp_error($response) || 200 !== wp_remote_retrieve_response_code($response)) {
-        return ['error' => 'Could not retrieve vulnerability data from Wordfence.'];
+        if (! file_exists($cache_file_path)) {
+          return ['error' => 'Could not retrieve vulnerability data from Wordfence.'];
+        }
       }
-
-      $vulnerability_data = json_decode(wp_remote_retrieve_body($response), true);
-
-      if (! $vulnerability_data) {
-        return ['error' => 'Could not parse vulnerability data.'];
-      }
-
-      // Cache the data for 12 hours
-      set_transient('wordfence_vulnerability_data', $vulnerability_data, 12 * HOUR_IN_SECONDS);
     }
+
+    if (! is_readable($cache_file_path)) {
+      return ['error' => 'Cached vulnerability data file is not readable.'];
+    }
+
+    // Step 2: Prepare a list of slugs for installed software BEFORE parsing.
+    // This is crucial for the inverted logic to work efficiently.
 
     // Get installed plugins
     if (! function_exists('get_plugins')) {
       require_once ABSPATH . 'wp-admin/includes/plugin.php';
     }
     $installed_plugins = get_plugins();
-    $active_plugins = get_option('active_plugins');
+    $active_plugins    = array_flip(get_option('active_plugins', [])); // Use array_flip for O(1) lookups
 
-
-    // Get active theme
-    $active_theme = wp_get_theme();
-
-    // Check plugins for vulnerabilities
+    $active_plugin_map = []; // Map slug => [Version, Name, Path]
     foreach ($installed_plugins as $plugin_path => $plugin_data) {
-      if (! in_array($plugin_path, $active_plugins, true)) {
-        continue; // Skip inactive plugins
+      if (! isset($active_plugins[$plugin_path])) {
+        continue; // Skip inactive
       }
       $plugin_slug = dirname($plugin_path);
       if ('.' === $plugin_slug) {
         $plugin_slug = preg_replace('/\..+$/', '', $plugin_path);
       }
+      $active_plugin_map[$plugin_slug] = [
+        'Version' => $plugin_data['Version'],
+        'Name'    => $plugin_data['Name'],
+        'Path'    => $plugin_path,
+      ];
+    }
 
-      foreach ($vulnerability_data as $vuln_id => $vuln_details) {
-        if (isset($vuln_details['software']) && is_array($vuln_details['software'])) {
-          foreach ($vuln_details['software'] as $software) {
+    // Get active theme
+    $active_theme      = wp_get_theme();
+    $theme_slug = $active_theme->get_stylesheet();
+
+    // Step 3: Stream-process the JSON file
+
+    // $fileStream = fopen($cache_file_path, 'r');
+    // if (false === $fileStream) {
+    //     return ['error' => 'Could not open cached vulnerability file for reading.'];
+    // }
+
+    // $items = Items::fromFile($cache_file_path);
+    $decoder = new ExtJsonDecoder(true);
+
+    // 2. Pass the custom decoder in the options array.
+    $items = Items::fromFile($cache_file_path, ['decoder' => $decoder]);
+
+    // Iterate over the object. JsonMachine yields both key and value.
+    foreach ($items as $key => $vuln_details) {
+      if (isset($vuln_details['software']) && is_array($vuln_details['software'])) {
+        foreach ($vuln_details['software'] as $software) {
+          foreach ($installed_plugins as $plugin_path => $plugin_data) {
             if ($software['type'] === 'plugin' && $software['slug'] === $plugin_slug) {
               if (isset($software['affected_versions']) && is_array($software['affected_versions'])) {
                 foreach ($software['affected_versions'] as $version_range => $version_data) {
@@ -253,15 +392,6 @@ class WP_Vital_Signs_REST
               }
             }
           }
-        }
-      }
-    }
-
-    // Check active theme for vulnerabilities
-    $theme_slug = $active_theme->get_stylesheet();
-    foreach ($vulnerability_data as $vuln_id => $vuln_details) {
-      if (isset($vuln_details['software']) && is_array($vuln_details['software'])) {
-        foreach ($vuln_details['software'] as $software) {
           if ($software['type'] === 'theme' && $software['slug'] === $theme_slug) {
             if (isset($software['affected_versions']) && is_array($software['affected_versions'])) {
               foreach ($software['affected_versions'] as $version_range => $version_data) {
@@ -280,10 +410,88 @@ class WP_Vital_Signs_REST
         }
       }
     }
+    // Check plugins for vulnerabilities
+    // foreach ($installed_plugins as $plugin_path => $plugin_data) {
+    //   if (! in_array($plugin_path, $active_plugins, true)) {
+    //     continue; // Skip inactive plugins
+    //   }
+    //   $plugin_slug = dirname($plugin_path);
+    //   if ('.' === $plugin_slug) {
+    //     $plugin_slug = preg_replace('/\..+$/', '', $plugin_path);
+    //   }
+
+    //   foreach ($vulnerability_data as $vuln_id => $vuln_details) {
+    //
+    //   }
+    // }
+
+    // // Check active theme for vulnerabilities
+    // $theme_slug = $active_theme->get_stylesheet();
+    // foreach ($vulnerability_data as $vuln_id => $vuln_details) {
+    //   if (isset($vuln_details['software']) && is_array($vuln_details['software'])) {
+    //     foreach ($vuln_details['software'] as $software) {
+    //       if ($software['type'] === 'theme' && $software['slug'] === $theme_slug) {
+    //         if (isset($software['affected_versions']) && is_array($software['affected_versions'])) {
+    //           foreach ($software['affected_versions'] as $version_range => $version_data) {
+    //             if (version_compare($active_theme->get('Version'), $version_data['from_version'], '>=') && version_compare($active_theme->get('Version'), $version_data['to_version'], '<=')) {
+    //               $vulnerabilities_found['themes'][$active_theme->get('Name')][] = [
+    //                 'vulnerability' => $vuln_details['title'],
+    //                 'version' => $active_theme->get('Version'),
+    //                 'details_link' => $vuln_details["cve_link"] ?? '',
+    //                 'slug' => $theme_slug,
+    //                 'fixed_in' => isset($software['patched_versions']) ? implode(', ', $software['patched_versions']) : 'Not specified',
+    //               ];
+    //             }
+    //           }
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
 
     $settings = WP_Vital_Signs::get_instance();
     $settings->set_setting('last_vulnerability_check', $vulnerabilities_found);
 
     return $vulnerabilities_found;
+  }
+
+  /**
+   * --- NEW METHOD ---
+   * Retrieves the results of the last vulnerability and core files checks.
+   *
+   * @return WP_REST_Response
+   */
+  public function get_last_checks()
+  {
+    $settings = WP_Vital_Signs::get_instance();
+
+    $last_vulnerability_check = $settings->get_setting('last_vulnerability_check');
+    $last_core_files_check = $settings->get_setting('last_core_files_check');
+
+    return [
+      'last_vulnerability_check' => empty($last_vulnerability_check) ? null : $last_vulnerability_check,
+      'last_core_files_check'    => empty($last_core_files_check) ? null : $last_core_files_check,
+    ];
+  }
+
+  /**
+   * --- NEW METHOD ---
+   * Callback to save the results of a core files scan sent from the frontend.
+   *
+   * @param WP_REST_Request $request The request object.
+   * @return WP_REST_Response
+   */
+  public function save_core_files_check( WP_REST_Request $request )
+  {
+    $scan_results = $request->get_json_params();
+
+    if (empty($scan_results)) {
+      return new WP_REST_Response(['success' => false, 'message' => 'No data received.'], 400);
+    }
+
+    $settings = WP_Vital_Signs::get_instance();
+    $settings->set_setting('last_core_files_check', $scan_results);
+
+    return new WP_REST_Response(['success' => true, 'message' => 'Core files check data saved.'], 200);
   }
 }

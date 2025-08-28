@@ -16,6 +16,7 @@ define( 'VS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'VS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 // Load classes
+require_once __DIR__ . '/vendor/autoload.php';
 require_once VS_PLUGIN_DIR . 'includes/wp_vital_signs.php';
 require_once VS_PLUGIN_DIR . 'includes/wp_vital_signs_rest.php';
 

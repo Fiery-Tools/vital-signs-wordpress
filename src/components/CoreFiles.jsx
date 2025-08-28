@@ -1,11 +1,41 @@
-import React, { useState, useEffect } from 'react';
-import { ShieldCheck, AlertTriangle, CircleDot, Loader2, Play, RefreshCw, Shield, Zap, FileX, HelpCircle } from 'lucide-react';
-import { CheckCircle, FileCheck, Clock } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+// import { ShieldCheck, AlertTriangle, CircleDot, Loader2, Play, RefreshCw, Shield, Zap, FileX, HelpCircle, CheckCircle, FileCheck, Clock } from '@/lib/icons'
+import { ShieldCheck, AlertTriangle, CircleDot, Loader2, Play, RefreshCw, Zap, FileX, HelpCircle, CheckCircle, Pause, Download } from '@/lib/icons';
+import { useVirtualizer } from '@tanstack/react-virtual';
+
+import TopCard from './TopCard';
 
 const CHUNK_SIZE = 25; // How many files to scan per "API call"
-const SCAN_DELAY_MS = 250; // Delay per chunk to simulate network/processing time
+const SCAN_DELAY_MS = 1000; // Delay to not overload the server
 
-// --- UI Components ---
+const saveCoreFileScanResults = async (scanData) => {
+  try {
+    const response = await fetch('/wp-json/vital-signs/v1/core-files-scan-complete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // VS_DATA.nonce should be available globally from your wp_localize_script call
+        'X-WP-Nonce': VS_DATA.nonce,
+      },
+      body: JSON.stringify(scanData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to save scan results.');
+    }
+
+    const result = await response.json();
+    console.log('Core file scan results saved successfully:', result.message);
+    // You could optionally return true here on success
+    return true;
+
+  } catch (error) {
+    console.error('Error saving core file scan results:', error);
+    // You could optionally return false here on failure
+    return false;
+  }
+};
 
 const FullPageLoader = () => (
   <div className="flex flex-col items-center justify-center p-12 bg-slate-50 rounded-lg">
@@ -33,154 +63,232 @@ const StatusDisplay = ({ status }) => {
   );
 };
 
-const FileTable = ({ files }) => (
-  <div className="mt-6 border border-slate-200 rounded-lg bg-white overflow-hidden">
-    <div className="h-96 overflow-y-auto">
-      <table className="min-w-full divide-y divide-slate-200">
-        <thead className="bg-slate-50 sticky top-0">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">File</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-slate-200">
-          {files.map((file) => (
-            <tr key={file.name}>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 font-mono">{file.name}</td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <StatusDisplay status={file.status} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+const FileTable = ({ files }) => {
+  // A ref for the scrolling container
+  const parentRef = useRef();
+
+  // The virtualizer hook
+  const rowVirtualizer = useVirtualizer({
+    count: files.length, // Total number of items in the list
+    getScrollElement: () => parentRef.current, // The element that scrolls
+    estimateSize: () => 49, // The estimated height of a single row in pixels
+    overscan: 5, // Render 5 extra items above and below the viewport
+  });
+
+  return (
+    <div className="mt-4 border border-slate-200 rounded-lg bg-white overflow-hidden">
+      {/* 1. The main scrollable container */}
+      <div
+        ref={parentRef}
+        // className="h-96 overflow-y-auto" // Must have a fixed height and be scrollable
+        className="overflow-y-auto h-[calc(100vh-30rem)] min-h-64" // Dynamic, calculated height
+      >
+        {/* 2. An inner container with the total height of all rows combined */}
+        <div
+          style={{
+            height: `${rowVirtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          {/* 3. Render only the virtual items */}
+          {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+            const file = files[virtualItem.index];
+            return (
+              <div
+                key={virtualItem.key}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: `${virtualItem.size}px`,
+                  transform: `translateY(${virtualItem.start}px)`,
+                }}
+                className="flex items-center border-b border-slate-200"
+              >
+                <div className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 font-mono flex-1">
+                  {file.name}
+                </div>
+                <div className="px-6 py-4 whitespace-nowrap">
+                  <StatusDisplay status={file.status} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // --- Main Scanner Component ---
 
 const CoreFileScanner = ({ toast }) => {
+  // --- All hooks are defined at the top level ---
   const [isLoadingFileList, setIsLoadingFileList] = useState(true);
-  const [scanStatus, setScanStatus] = useState('idle'); // 'idle', 'scanning', 'complete'
+  const [scanStatus, setScanStatus] = useState('idle');
   const [files, setFiles] = useState([]);
   const [progress, setProgress] = useState(0);
-  // const [issuesFound, setIssuesFound] = useState(0);
-  let issuesFound = files.filter(file => !['verified', 'pending'].includes(file.status)).length;
+  const [isPaused, setIsPaused] = useState(false);
 
-  // 1. Fetch the initial list of files when the component mounts
+  const scanIndexRef = useRef(0);
+  const isCancelledRef = useRef(false);
+
+  const filesWithIssues = useMemo(() => files.filter(f => f.status !== 'verified'), [files]);
+  const issuesFound = filesWithIssues.length;
+
   useEffect(() => {
-    fetch(VS_DATA.rest_url + '/checksums', {
-      headers: {
-        'X-WP-Nonce': VS_DATA.nonce,
-      }
-    }).then(res => res.json())
-      .then(checksums => {
-
-        setFiles(Object.keys(checksums).map(name => ({ name, status: 'pending' })));
-        setIsLoadingFileList(false);
-        toast.success('Successfully loaded checksums');
+    isCancelledRef.current = false;
+    fetch('/wp-json/vital-signs/v1/checksums', { headers: { 'X-WP-Nonce': VS_DATA.nonce } })
+      .then(res => res.json())
+      .then(({ checksums }) => {
+        if (!isCancelledRef.current) {
+          setFiles(Object.keys(checksums).map(name => ({ name, status: 'pending', checksum: checksums[name] })));
+          setIsLoadingFileList(false);
+          toast.success('Ready to scan core files.');
+        }
       })
       .catch(err => {
-        toast.error('Error fetching file list');
-        console.error('Error fetching file list:', err);
-        setIsLoadingFileList(false);
-        setFiles([]);
+        if (!isCancelledRef.current) {
+          toast.error('Error fetching file list.');
+          setIsLoadingFileList(false);
+        }
       });
 
+    return () => { isCancelledRef.current = true; };
+  }, [toast]);
 
-  }, []);
-
-  // 2. The main function to handle the scan process
-  const handleStartScan = async () => {
+  const handleStartScan = useCallback(async () => {
     setScanStatus('scanning');
-    setProgress(0);
+    setIsPaused(false);
 
-    let currentIssues = 0;
-    let processedFiles = files.map(f => ({ ...f, status: 'pending' }));
-
-    for (let i = 0; i < processedFiles.length; i += CHUNK_SIZE) {
-      const chunk = processedFiles.slice(i, i + CHUNK_SIZE);
-
-      // Simulate API call to scan a chunk
-      await new Promise(resolve => setTimeout(resolve, SCAN_DELAY_MS));
-
-      // Update status for the processed chunk
-      const processedChunk = await fetch(VS_DATA.rest_url + `/checksum_chunk`, {
-        method: 'POST',
-        headers: {
-          'X-WP-Nonce': VS_DATA.nonce,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ chunk }),
-      }).then(res => res.json())
-
-
-
-      // Update the main files array
-      processedFiles.splice(i, processedChunk.length, ...processedChunk);
-      setFiles([...processedFiles]);
-
-      // Update progress
-      const newProgress = Math.min(100, ((i + CHUNK_SIZE) / files.length) * 100);
-      setProgress(newProgress);
+    if (scanIndexRef.current === 0) {
+      setProgress(0);
+      setFiles(prevFiles => prevFiles.map(f => ({ ...f, status: 'pending' })));
     }
 
-    setScanStatus('complete');
-  };
+    let processedFiles = [...files];
 
-  if (isLoadingFileList) {
-    return <FullPageLoader />;
-  }
+    while (scanIndexRef.current < processedFiles.length && !isCancelledRef.current) {
+      if (isPaused) {
+        await new Promise(resolve => setTimeout(resolve, 250));
+        continue;
+      }
 
-  const scanButtonText = scanStatus === 'idle' ? 'Start Scan' : scanStatus === 'scanning' ? 'Scanning...' : 'Scan Again';
-  const ScanButtonIcon = scanStatus === 'complete' ? RefreshCw : Play;
+      const chunk = processedFiles.slice(scanIndexRef.current, scanIndexRef.current + CHUNK_SIZE);
+      const processedChunk = await fetch(`/wp-json/vital-signs/v1/checksum_chunk`, {
+        method: 'POST',
+        headers: { 'X-WP-Nonce': VS_DATA.nonce, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chunk }),
+      }).then(res => res.json());
+
+      if (isCancelledRef.current) break;
+
+      processedFiles.splice(scanIndexRef.current, processedChunk.length, ...processedChunk);
+      setFiles([...processedFiles]);
+      scanIndexRef.current += chunk.length;
+      setProgress(Math.min(100, (scanIndexRef.current / files.length) * 100));
+    }
+
+    if (!isCancelledRef.current) {
+      setScanStatus('complete');
+      setIsPaused(false);
+      scanIndexRef.current = 0;
+    }
+  }, [files, isPaused]);
+
+  const handlePause = useCallback(() => setIsPaused(true), []);
+  const handleResume = useCallback(() => setIsPaused(false), []);
+  const handleReset = useCallback(() => {
+    setScanStatus('idle');
+    setProgress(0);
+    scanIndexRef.current = 0;
+    setFiles(files.map(f => ({ ...f, status: 'pending' })));
+  }, [files]);
+
+  const handleExportCSV = useCallback(() => {
+    if (filesWithIssues.length === 0) {
+      toast.info("No issues to export.");
+      return;
+    }
+
+    const header = '"File Path","Status"\n';
+    const rows = filesWithIssues.map(file => `"${file.name}","${file.status}"`).join('\n');
+    const csvContent = header + rows;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'wp-core-file-issues.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Issues exported to CSV.");
+  }, [filesWithIssues, toast]);
+
+  // --- JSX Rendering ---
+  if (isLoadingFileList) return <FullPageLoader />;
 
   return (
-    <div>
+    <div className="w-full bg-secondary p-4">
+      <TopCard title="WP Vital Signs | Core Files Scanner" subtitle="Compares your WordPress core files against official checksums to detect unauthorized changes." />
+      <div className="bg-white p-4 border border-slate-200 rounded-lg shadow-sm">
+        <div className="flex items-center gap-4">
+          {scanStatus === 'scanning' ? (
+            isPaused ? (
+              <button onClick={handleResume} className="inline-flex items-center gap-2 bg-green-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-green-700">
+                <Play className="h-5 w-5" /> Resume Scan
+              </button>
+            ) : (
+              <button onClick={handlePause} className="inline-flex items-center gap-2 bg-yellow-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-yellow-600">
+                <Pause className="h-5 w-5" /> Pause Scan
+              </button>
+            )
+          ) : (
+            <button onClick={scanStatus === 'complete' ? handleReset : handleStartScan} className="inline-flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700">
+              <RefreshCw className="h-5 w-5" />
+              {scanStatus === 'complete' ? 'Scan Again' : 'Start Scan'}
+            </button>
+          )}
+        </div>
 
-
-      <div className="bg-white p-6 border border-slate-200 rounded-lg shadow-sm">
-        <h2 className="text-2xl font-bold text-slate-800">Core File Integrity Scanner</h2>
-        <p className="mt-1 text-slate-600">Compares your WordPress core files against official checksums to detect unauthorized changes.</p>
-
-        <button
-          onClick={handleStartScan}
-          disabled={scanStatus === 'scanning'}
-          className="mt-4 inline-flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition-colors disabled:bg-slate-400 disabled:cursor-wait"
-        >
-          <ScanButtonIcon className={`h-5 w-5 ${scanStatus === 'scanning' ? 'animate-spin' : ''}`} />
-          {scanButtonText}
-        </button>
-
-        {/* Progress Bar and Status */}
-        {scanStatus === 'scanning' && (
+  {scanStatus === 'scanning' && (
           <div className="mt-4">
             <div className="flex justify-between items-center mb-1">
               <span className="text-sm font-medium text-blue-700">Scanning in progress...</span>
               <div className="flex items-center gap-3">
 
-                <span className={`text-sm font-medium ${issuesFound > 0 ? 'text-red-600' : 'text-green-600'}`}>{issuesFound} issues found</span>
+                {files.filter(f => f.status === 'verified').length} files verified / <span className={`text-sm font-medium ${issuesFound > 0 ? 'text-red-600' : 'text-green-600'}`}>{issuesFound} issues found</span>
 
                 <span className="text-sm font-medium text-blue-700">{Math.round(progress)}%</span>
               </div>
             </div>
             <div className="w-full bg-slate-200 rounded-full h-2.5">
-              <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
+              <div className="bg-blue-600 h-2.5 rounded-full" style={{
+                width: `${progress}%`,
+                transition: 'width 0.5s ease-in-out', // This is the line you need to add
+              }}></div>
             </div>
           </div>
         )}
 
-        {/* Scan Completion Summary */}
+
+        {/* --- Conditional rendering in JSX is perfectly fine --- */}
         {scanStatus === 'complete' && (
-          <div className={`mt-4 p-4 rounded-md font-medium text-center ${issuesFound > 0 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-            }`}>
-            Scan complete. {issuesFound > 0 ? `${issuesFound} issue(s) found.` : 'All files verified successfully!'}
+          <div className="mt-4 p-4 rounded-md flex items-center justify-between font-medium bg-green-100 text-green-800">
+            <span>Scan complete. {issuesFound > 0 ? `${issuesFound} issue(s) found.` : 'All files verified!'}</span>
+            {issuesFound > 0 && (
+              <button onClick={handleExportCSV} className="inline-flex items-center gap-2 bg-slate-600 text-white text-sm font-semibold py-1 px-3 rounded-md hover:bg-slate-700">
+                <Download className="h-4 w-4" />
+                Export Issues
+              </button>
+            )}
           </div>
         )}
       </div>
-
-      <FileTable files={files} />
+      <FileTable files={filesWithIssues} />
     </div>
   );
 };

@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { CheckCircle2 } from 'lucide-react'; // Import the icon
+import { CheckCircle2 } from '@/lib/icons'; // Import the icon
+import TopCard from './TopCard';
 
 
 
 // --- The Roadmap Timeline Component ---
 
-const RoadmapTimeline = () => {
+const Roadmap = () => {
   // The roadmap data now includes a 'completed' flag for each feature.
-    const roadmapPhases = [
-      {
+  const roadmapPhases = [
+    {
       phase: 0,
       title: "Completed Features",
       goal: "The foundational tools that are live and available right now.",
@@ -47,92 +48,60 @@ const RoadmapTimeline = () => {
       ]
     },
     {
-        phase: 4,
-        title: "Holistic Mission Control",
-        goal: "Tie all features together into a single, actionable dashboard and complete the 360-degree view of the site's health.",
-        features: [
-          { id: 9, title: "Site Health & Best Practices Checklist", description: "Acts as a 'virtual consultant,' synthesizing data from all other tools into a single, actionable checklist to guide users." },
-          { id: 5, title: "API & External Services Health Check", description: "Completes the picture by monitoring the uptime and response time of critical external services your site relies on." }
-        ]
-      }
+      phase: 4,
+      title: "Holistic Mission Control",
+      goal: "Tie all features together into a single, actionable dashboard and complete the 360-degree view of the site's health.",
+      features: [
+        { id: 9, title: "Site Health & Best Practices Checklist", description: "Acts as a 'virtual consultant,' synthesizing data from all other tools into a single, actionable checklist to guide users." },
+        { id: 5, title: "API & External Services Health Check", description: "Completes the picture by monitoring the uptime and response time of critical external services your site relies on." }
+      ]
+    }
 
   ];
 
   return (
-    <div className="space-y-6">
-      {roadmapPhases.map((phase) => (
-        <div key={phase.phase} className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
-          <h3 className="mt-0 text-xl font-bold text-slate-900 border-b border-slate-100 pb-3 mb-3">
-            {phase.title}
-          </h3>
-          <p className="italic text-slate-600">{phase.goal}</p>
-          <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {phase.features.map(feature => (
-              <div
-                key={feature.id}
-                className={`p-4 rounded-md border ${
-                  feature.completed
-                    ? 'bg-green-50 border-green-200'
-                    : 'bg-slate-50 border-slate-200'
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  {feature.completed && (
-                    <CheckCircle2 className="h-6 w-6 text-green-600 flex-shrink-0 mt-0.5" />
-                  )}
-                  <div className="flex-grow">
-                    <h4 className={`mt-0 text-base font-semibold ${
-                      feature.completed ? 'text-green-800' : 'text-slate-800'
-                    }`}>
-                      {feature.title}
-                    </h4>
-                    <p className={`text-sm ${
-                      feature.completed ? 'text-green-700' : 'text-slate-600'
-                    }`}>
-                      {feature.description}
-                    </p>
+    <div className="w-full bg-secondary p-4">
+      <TopCard title="WP Vital Signs | Roadmap" subtitle="A roadmap of our future plans" />
+      <div className="space-y-6">
+        {roadmapPhases.map((phase) => (
+          <div key={phase.phase} className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
+            <h3 className="mt-0 text-xl font-bold text-slate-900 border-b border-slate-100 pb-3 mb-3">
+              {phase.title}
+            </h3>
+            <p className="italic text-slate-600">{phase.goal}</p>
+            <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {phase.features.map(feature => (
+                <div
+                  key={feature.id}
+                  className={`p-4 rounded-md border ${feature.completed
+                      ? 'bg-green-50 border-green-200'
+                      : 'bg-slate-50 border-slate-200'
+                    }`}
+                >
+                  <div className="flex items-start gap-3">
+                    {feature.completed && (
+                      <CheckCircle2 className="h-6 w-6 text-green-600 flex-shrink-0 mt-0.5" />
+                    )}
+                    <div className="flex-grow">
+                      <h4 className={`mt-0 text-base font-semibold ${feature.completed ? 'text-green-800' : 'text-slate-800'
+                        }`}>
+                        {feature.title}
+                      </h4>
+                      <p className={`text-sm ${feature.completed ? 'text-green-700' : 'text-slate-600'
+                        }`}>
+                        {feature.description}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-
-// --- Main Component ---
-
-const Roadmap = () => {
-  const [activeTab, setActiveTab] = useState('roadmap');
-
-  const getTabClass = (tabName) => {
-    const baseClasses = "py-3 px-5 border-b-2 font-medium text-sm cursor-pointer transition-colors duration-200";
-    if (activeTab === tabName) {
-      return `${baseClasses} text-blue-600 border-blue-600`;
-    }
-    return `${baseClasses} text-slate-500 border-transparent hover:border-slate-300 hover:text-slate-700`;
-  };
-
-  return (
-    <div className="font-sans bg-slate-50 border border-slate-200 rounded-lg w-full max-w-5xl mx-auto my-5 overflow-hidden">
-      <div className="flex border-b border-slate-200 bg-white">
-        <button className={getTabClass('dashboard')} onClick={() => setActiveTab('dashboard')}>
-          Dashboard
-        </button>
-        <button className={getTabClass('roadmap')} onClick={() => setActiveTab('roadmap')}>
-          Roadmap
-        </button>
-      </div>
-
-      <div className="p-6">
-        {activeTab === 'dashboard' && <DashboardView />}
-        {activeTab === 'roadmap' && <RoadmapTimeline />}
+        ))}
       </div>
     </div>
   );
+
 };
 
 export default Roadmap;

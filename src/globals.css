@@ -1,11 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-#vs-app {
-  all: initial; /* resets most inherited styles */
-  all: unset; /* or try this if initial causes issues */
-  display: block;
-  font-family: system-ui, sans-serif; /* reapply desired defaults */
+
+#vs-plugin-wrapper {
+  all: initial;
+  display: block; /* Or your desired display type */
+  font-family: system-ui, sans-serif;
   color: #000;
+  line-height: 1.5; /* It's good practice to reset line-height */
+}
+
+#vs-plugin-wrapper :where(h1, h2, h3, h4, p, a, ul, ol, li, button, input) {
+  margin: revert;
+  padding: revert;
+  background: revert;
+  border: revert;
+  font-size: revert;
+  font-weight: revert;
+  color: revert;
+  text-align: revert;
+  text-decoration: revert;
 }

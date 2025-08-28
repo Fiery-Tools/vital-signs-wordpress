@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, Shield, ExternalLink, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { AlertTriangle, Shield, ExternalLink, CheckCircle, Clock, AlertCircle, Loader2 } from '@/lib/icons';
 import toast from 'react-hot-toast';
 
 // Reusable table component
@@ -143,7 +143,7 @@ const VulnerabilityDashboard = ({ data }) => {
   const deactivatePlugin = async (slug) => {
     try {
 
-      const response = await fetch(VS_DATA.rest_url + '/deactivate', {
+      const response = await fetch('/wp-json/vital-signs/v1/deactivate', {
         method: 'POST',
         headers: {
           'X-WP-Nonce': VS_DATA.nonce,
