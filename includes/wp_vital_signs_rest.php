@@ -162,18 +162,17 @@ class WP_Vital_Signs_REST
     return ['message' => 'Plugin deactivated successfully'];
   }
 
+  // in includes/wp_vital_signs_rest.php
+
   public function get_checksums()
   {
     global $wp_version;
-    // todo check locale
     $api_url = 'https://api.wordpress.org/core/checksums/1.0/?version=' . $wp_version . '&locale=en_US';
 
     $upload_dir      = wp_upload_dir();
-    $cache_file_path = $upload_dir['basedir'] . '/chechsums.json';
-    $cache_lifetime  = 60 * 24 * HOUR_IN_SECONDS;
+    $cache_file_path = $upload_dir['basedir'] . '/checksums.json'; // Changed filename
+    $cache_lifetime  = 24 * HOUR_IN_SECONDS;
 
-    // Step 1: Download and cache the file (same as before)
-    // This part ensures the file is available locally without using memory for the download.
     if (! file_exists($cache_file_path) || (time() - filemtime($cache_file_path)) > $cache_lifetime) {
       $response = wp_remote_get($api_url, [
         'stream'   => true,
@@ -183,49 +182,32 @@ class WP_Vital_Signs_REST
 
       if (is_wp_error($response) || 200 !== wp_remote_retrieve_response_code($response)) {
         if (! file_exists($cache_file_path)) {
-          return ['error' => 'Could not retrieve core files data.'];
+          // Send a proper JSON error if we fail and have no cache
+          return new WP_Error('checksum_error', 'Could not retrieve core files data.', ['status' => 500]);
         }
       }
     }
 
     if (! is_readable($cache_file_path)) {
-      return ['error' => 'Cached core files data file is not readable.'];
+      return new WP_Error('cache_error', 'Cached core files data file is not readable.', ['status' => 500]);
     }
 
-
-
-
+    // Set the correct headers for a JSON file stream
     header('Content-Type: application/json; charset=utf-8');
     header('Content-Length: ' . filesize( $cache_file_path ));
 
-    // It's crucial to clear any output buffering that might be active
+    // Ensure no other output buffers are interfering
     if (ob_get_level()) {
         ob_end_clean();
     }
 
-    $file_handle = fopen( $cache_file_path, 'rb' );
-    if ( $file_handle !== false ) {
-      // Stream the file and immediately exit
-      fpassthru( $file_handle );
-      fclose($file_handle);
-    }
+    // Read the file and dump its contents to the output
+    readfile($cache_file_path);
 
-    // if ( is_wp_error( $response ) ) {
-    //     wp_send_json_error(
-    //         array(
-    //             'message' => 'Failed to connect to the WordPress.org API.',
-    //             'error'   => $response->get_error_message(),
-    //         ),
-    //         500 // Internal Server Error
-    //     );
-    //     return; // Stop execution
-    // }
-
-    // $json_body = wp_remote_retrieve_body($response);
-    // return $json_body;
-
-    // $checksums = get_core_checksums($wp_version, 'en_US');
-    // return $checksums;
+    // --- THE CRITICAL FIX ---
+    // We MUST terminate the script here to prevent WordPress from trying
+    // to send its own headers and response, which causes the error.
+    exit;
   }
 
   //    $url = 'https://api.wordpress.org/core/checksums/1.0/?version=6.8.2&locale=en_US';
@@ -459,8 +441,19 @@ class WP_Vital_Signs_REST
     //   }
     // }
 
+
+
+    $scan_data_to_save = [
+        'results' => $vulnerabilities_found,
+        'lastScan' => date('c'),
+
+        // 'lastScan' => current_time('mysql', 1), // e.g., "2023-10-27 10:00:00"
+    ];
+
+    // 2. Save the ENTIRE object to the 'last_vulnerability_check' setting.
     $settings = WP_Vital_Signs::get_instance();
-    $settings->set_setting('last_vulnerability_check', $vulnerabilities_found);
+    $settings->set_setting('last_vulnerability_check', $scan_data_to_save);
+
 
     return $vulnerabilities_found;
   }

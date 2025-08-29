@@ -124,24 +124,39 @@ const CoreFileScanner = ({ toast }) => {
   const [scanStatus, setScanStatus] = useState('idle');
   const [files, setFiles] = useState([]);
   const [progress, setProgress] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
 
   const scanIndexRef = useRef(0);
   const isCancelledRef = useRef(false);
 
   const filesWithIssues = useMemo(() => files.filter(f => f.status !== 'verified'), [files]);
-  const issuesFound = filesWithIssues.length;
+  const filesWithErrors = useMemo(() => files.filter(f => f.status !== 'verified' && f.status !== 'pending'), [files]);
+  const issuesFound = filesWithErrors.length;
+
+  // in CoreFileScanner.jsx
 
   useEffect(() => {
     isCancelledRef.current = false;
     fetch('/wp-json/vital-signs/v1/checksums', { headers: { 'X-WP-Nonce': VS_DATA.nonce } })
       .then(res => res.json())
-      .then(({ checksums }) => {
-        if (!isCancelledRef.current) {
-          setFiles(Object.keys(checksums).map(name => ({ name, status: 'pending', checksum: checksums[name] })));
-          setIsLoadingFileList(false);
+      .then(data => { // <-- 1. Accept the full 'data' object
+        if (isCancelledRef.current) return;
+
+        // 2. Access the 'checksums' property from the data object
+        const { checksums } = data;
+
+        // 3. Check if checksums actually exist before processing
+        console.log('1')
+        if (checksums) {
+          let files = Object.keys(checksums).map(name => ({ name, status: 'pending', checksum: checksums[name] }))
+          console.log({files})
+          setFiles(files);
           toast.success('Ready to scan core files.');
+        } else {
+          console.log('no checksums')
+          toast.error('Could not parse the checksums file.');
         }
+        console.log('2')
+        setIsLoadingFileList(false);
       })
       .catch(err => {
         if (!isCancelledRef.current) {
@@ -155,7 +170,6 @@ const CoreFileScanner = ({ toast }) => {
 
   const handleStartScan = useCallback(async () => {
     setScanStatus('scanning');
-    setIsPaused(false);
 
     if (scanIndexRef.current === 0) {
       setProgress(0);
@@ -165,10 +179,6 @@ const CoreFileScanner = ({ toast }) => {
     let processedFiles = [...files];
 
     while (scanIndexRef.current < processedFiles.length && !isCancelledRef.current) {
-      if (isPaused) {
-        await new Promise(resolve => setTimeout(resolve, 250));
-        continue;
-      }
 
       const chunk = processedFiles.slice(scanIndexRef.current, scanIndexRef.current + CHUNK_SIZE);
       const processedChunk = await fetch(`/wp-json/vital-signs/v1/checksum_chunk`, {
@@ -187,7 +197,6 @@ const CoreFileScanner = ({ toast }) => {
 
     if (!isCancelledRef.current) {
       setScanStatus('complete');
-      setIsPaused(false);
       scanIndexRef.current = 0;
 
 
@@ -210,18 +219,9 @@ const CoreFileScanner = ({ toast }) => {
         toast.error('Could not save scan results to the server.');
       }
 
-
-
-
-
-
-
-
     }
-  }, [files, isPaused]);
+  }, [files]);
 
-  const handlePause = useCallback(() => setIsPaused(true), []);
-  const handleResume = useCallback(() => setIsPaused(false), []);
   const handleReset = useCallback(() => {
     setScanStatus('idle');
     setProgress(0);
@@ -258,22 +258,10 @@ const CoreFileScanner = ({ toast }) => {
       <TopCard title="WP Vital Signs | Core Files Scanner" subtitle="Compares your WordPress core files against official checksums to detect unauthorized changes." />
       <div className="bg-white p-4 border border-slate-200 rounded-lg shadow-sm">
         <div className="flex items-center gap-4">
-          {scanStatus === 'scanning' ? (
-            isPaused ? (
-              <button onClick={handleResume} className="inline-flex items-center gap-2 bg-green-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-green-700">
-                <Play className="h-5 w-5" /> Resume Scan
-              </button>
-            ) : (
-              <button onClick={handlePause} className="inline-flex items-center gap-2 bg-yellow-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-yellow-600">
-                <Pause className="h-5 w-5" /> Pause Scan
-              </button>
-            )
-          ) : (
-            <button onClick={scanStatus === 'complete' ? handleReset : handleStartScan} className="inline-flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700">
+          <button onClick={scanStatus === 'complete' ? handleReset : handleStartScan} className="inline-flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700">
               <RefreshCw className="h-5 w-5" />
               {scanStatus === 'complete' ? 'Scan Again' : 'Start Scan'}
             </button>
-          )}
         </div>
 
         {scanStatus === 'scanning' && (
@@ -282,7 +270,7 @@ const CoreFileScanner = ({ toast }) => {
               <span className="text-sm font-medium text-blue-700">Scanning in progress...</span>
               <div className="flex items-center gap-3">
 
-                {files.filter(f => f.status === 'verified').length} files verified / <span className={`text-sm font-medium ${issuesFound > 0 ? 'text-red-600' : 'text-green-600'}`}>{issuesFound} issues found</span>
+                <span className="text-sm font-medium text-green-600">{files.filter(f => f.status === 'verified').length} files verified</span> / <span className={`text-sm font-medium ${issuesFound > 0 ? 'text-red-600' : 'text-green-600'}`}>{issuesFound} issues found</span>
 
                 <span className="text-sm font-medium text-blue-700">{Math.round(progress)}%</span>
               </div>

@@ -16,37 +16,6 @@ define('VS_DEV', true);
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-if ( ! function_exists( 'wvs_fs' ) ) {
-    // Create a helper function for easy SDK access.
-    function wvs_fs() {
-        global $wvs_fs;
-
-        if ( ! isset( $wvs_fs ) ) {
-            // Include Freemius SDK.
-            require_once dirname( __FILE__ ) . '/vendor/freemius/start.php';
-            $wvs_fs = fs_dynamic_init( array(
-                'id'                  => '20488',
-                'slug'                => 'wp-vital-signs',
-                'type'                => 'plugin',
-                'public_key'          => 'pk_291632b8d042300883a68db0ab495',
-                'is_premium'          => false,
-                'has_addons'          => false,
-                'has_paid_plans'      => false,
-                'menu'                => array(
-                    'slug'           => 'wp-vital-signs',
-                ),
-            ) );
-        }
-
-        return $wvs_fs;
-    }
-
-    // Init Freemius.
-    wvs_fs();
-    // Signal that SDK was initiated.
-    do_action( 'wvs_fs_loaded' );
-}
-
 define( 'VS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'VS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 

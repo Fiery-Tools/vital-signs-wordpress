@@ -4,22 +4,6 @@ import { Link } from 'react-router-dom';
 import TopCard from './TopCard';
 import Loading from './home/Loading';
 
-const mockVulnerabilities = {
-  lastScanned: '2024-01-15T10:30:00Z',
-  totalIssues: 6,
-  criticalIssues: 1,
-  pluginIssues: 5,
-  themeIssues: 1
-};
-
-const mockCoreFiles = {
-  lastScanned: '2024-01-14T14:22:00Z',
-  totalFiles: 2847,
-  verifiedFiles: 2845,
-  failedFiles: 2,
-  status: 'issues_found' // 'clean', 'issues_found', or null for never scanned
-};
-
 const formatLastScanned = (dateString) => {
   if (!dateString) return null;
   const date = new Date(dateString);
@@ -33,10 +17,11 @@ const formatLastScanned = (dateString) => {
   return date.toLocaleDateString();
 };
 
-
 const VulnerabilityCard = ({ data }) => {
   // Process data to get statistics
-  if (!data) {
+  let {results, lastScan} = data || {}
+  let {plugins, themes} = results || {}
+  if (!lastScan) {
     return <div className="text-center py-8">
       <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
         <Shield className="h-8 w-8 text-slate-400" />
@@ -46,10 +31,10 @@ const VulnerabilityCard = ({ data }) => {
         to="/vulnerabilities"
         className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
       >
-      <div className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium cursor-pointer">
-        <Shield className="h-4 w-4" />
-        Run First Scan
-      </div>
+        <div className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium cursor-pointer">
+          <Shield className="h-4 w-4" />
+          Run First Scan
+        </div>
       </Link>
     </div>
   }
@@ -60,7 +45,7 @@ const VulnerabilityCard = ({ data }) => {
     let themeCount = 0;
 
     // Process plugins
-    Object.values(data.plugins || {}).forEach(pluginVulns => {
+    Object.values(plugins || {}).forEach(pluginVulns => {
       pluginVulns.forEach(vuln => {
         totalVulns++;
         pluginCount++;
@@ -69,7 +54,7 @@ const VulnerabilityCard = ({ data }) => {
     });
 
     // Process themes
-    Object.values(data.themes || {}).forEach(themeVulns => {
+    Object.values(themes || {}).forEach(themeVulns => {
       themeVulns.forEach(vuln => {
         totalVulns++;
         themeCount++;
@@ -87,7 +72,6 @@ const VulnerabilityCard = ({ data }) => {
 
   const stats = processData();
   const hasData = stats.total > 0;
-  const formatLastScanned = () => "today"; // You can implement actual date formatting
 
   return (
     <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
@@ -99,53 +83,41 @@ const VulnerabilityCard = ({ data }) => {
           <div>
             <h3 className="text-lg font-semibold text-slate-800">Vulnerability Scan</h3>
             <p className="text-sm text-slate-600">
-              {hasData ? `Last scanned ${formatLastScanned()}` : 'Never scanned'}
+              {hasData ? `Last scanned ${formatLastScanned(lastScan)}` : 'Never scanned'}
             </p>
           </div>
         </div>
-        <div className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium cursor-pointer">
+        <Link to="/vulnerabilities" className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium cursor-pointer">
           View Details <ArrowRight className="h-4 w-4" />
-        </div>
+        </Link>
       </div>
 
-      {hasData ? (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-            <span className="text-sm font-medium text-slate-700">Total Issues Found</span>
-            <span className={`text-lg font-bold ${stats.total > 0 ? 'text-red-600' : 'text-green-600'}`}>
-              {stats.total}
-            </span>
-          </div>
 
-          {stats.total > 0 && (
-            <div className="grid grid-cols-3 gap-3">
-              <div className="text-center">
-                <div className="text-lg font-bold text-red-600">{stats.total}</div>
-                <div className="text-xs text-slate-600">Total</div>
-              </div>
-              <div className="text-center">
-                <div className="text-lg font-bold text-orange-600">{stats.plugins}</div>
-                <div className="text-xs text-slate-600">Plugins</div>
-              </div>
-              <div className="text-center">
-                <div className="text-lg font-bold text-yellow-600">{stats.themes}</div>
-                <div className="text-xs text-slate-600">Themes</div>
-              </div>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+          <span className="text-sm font-medium text-slate-700">Total Issues Found</span>
+          <span className={`text-lg font-bold ${stats.total > 0 ? 'text-red-600' : 'text-green-600'}`}>
+            {stats.total}
+          </span>
+        </div>
+
+        {stats.total > 0 && (
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center">
+              <div className="text-lg font-bold text-red-600">{stats.total}</div>
+              <div className="text-xs text-slate-600">Total</div>
             </div>
-          )}
-        </div>
-      ) : (
-        <div className="text-center py-8">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <Shield className="h-8 w-8 text-slate-400" />
+            <div className="text-center">
+              <div className="text-lg font-bold text-orange-600">{stats.plugins}</div>
+              <div className="text-xs text-slate-600">Plugins</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-yellow-600">{stats.themes}</div>
+              <div className="text-xs text-slate-600">Themes</div>
+            </div>
           </div>
-          <p className="text-slate-500 mb-4">No vulnerability scans performed yet</p>
-          <div className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium cursor-pointer">
-            <Shield className="h-4 w-4" />
-            Run First Scan
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
@@ -297,7 +269,7 @@ const Home = ({ vulnerabilities, coreFileScan, status, toast }) => {
       .then(setLastChecks);
   }, []);
 
-  let {last_vulnerability_check, last_core_files_check} = lastChecks || {}
+  let { last_vulnerability_check, last_core_files_check } = lastChecks || {}
   let showClearButton = last_vulnerability_check || last_core_files_check
 
   return (

@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "cross-env NODE_ENV=development vite build",
-    "dev": "cross-env NODE_ENV=development vite"
+    "dev": "cross-env NODE_ENV=development vite",
+    "zip": "rm -rf wp-vital-signs.zip build & mkdir -p build/wp-vital-signs & cp -r dist freemius languages *.php readme.txt build/wp-vital-signs/ & cd build & zip -r ../wp-vital-signs.zip wp-vital-signs & cd .. & rm -rf build"
   },
   "keywords": [
     "wordpress",

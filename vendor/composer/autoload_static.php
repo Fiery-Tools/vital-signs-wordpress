@@ -13,21 +13,11 @@ class ComposerStaticInite8bc608a1484ce54efe4c1c145802796
     public static $prefixLengthsPsr4 = array (
         'J' => 
         array (
-            'JsonStreamingParser\\Test\\' => 25,
-            'JsonStreamingParser\\' => 20,
             'JsonMachine\\' => 12,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'JsonStreamingParser\\Test\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/salsify/json-streaming-parser/tests',
-        ),
-        'JsonStreamingParser\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/salsify/json-streaming-parser/src',
-        ),
         'JsonMachine\\' => 
         array (
             0 => __DIR__ . '/..' . '/halaxa/json-machine/src',
@@ -36,6 +26,34 @@ class ComposerStaticInite8bc608a1484ce54efe4c1c145802796
 
     public static $classMap = array (
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
+        'JsonMachine\\Exception\\BadMethodCallException' => __DIR__ . '/..' . '/halaxa/json-machine/src/Exception/BadMethodCallException.php',
+        'JsonMachine\\Exception\\InvalidArgumentException' => __DIR__ . '/..' . '/halaxa/json-machine/src/Exception/InvalidArgumentException.php',
+        'JsonMachine\\Exception\\JsonMachineException' => __DIR__ . '/..' . '/halaxa/json-machine/src/Exception/JsonMachineException.php',
+        'JsonMachine\\Exception\\OutOfBoundsException' => __DIR__ . '/..' . '/halaxa/json-machine/src/Exception/OutOfBoundsException.php',
+        'JsonMachine\\Exception\\PathNotFoundException' => __DIR__ . '/..' . '/halaxa/json-machine/src/Exception/PathNotFoundException.php',
+        'JsonMachine\\Exception\\SyntaxErrorException' => __DIR__ . '/..' . '/halaxa/json-machine/src/Exception/SyntaxErrorException.php',
+        'JsonMachine\\Exception\\UnexpectedEndSyntaxErrorException' => __DIR__ . '/..' . '/halaxa/json-machine/src/Exception/UnexpectedEndSyntaxErrorException.php',
+        'JsonMachine\\FacadeTrait' => __DIR__ . '/..' . '/halaxa/json-machine/src/FacadeTrait.php',
+        'JsonMachine\\FileChunks' => __DIR__ . '/..' . '/halaxa/json-machine/src/FileChunks.php',
+        'JsonMachine\\Items' => __DIR__ . '/..' . '/halaxa/json-machine/src/Items.php',
+        'JsonMachine\\ItemsOptions' => __DIR__ . '/..' . '/halaxa/json-machine/src/ItemsOptions.php',
+        'JsonMachine\\JsonDecoder\\DecodingError' => __DIR__ . '/..' . '/halaxa/json-machine/src/JsonDecoder/DecodingError.php',
+        'JsonMachine\\JsonDecoder\\ErrorWrappingDecoder' => __DIR__ . '/..' . '/halaxa/json-machine/src/JsonDecoder/ErrorWrappingDecoder.php',
+        'JsonMachine\\JsonDecoder\\ExtJsonDecoder' => __DIR__ . '/..' . '/halaxa/json-machine/src/JsonDecoder/ExtJsonDecoder.php',
+        'JsonMachine\\JsonDecoder\\InvalidResult' => __DIR__ . '/..' . '/halaxa/json-machine/src/JsonDecoder/InvalidResult.php',
+        'JsonMachine\\JsonDecoder\\ItemDecoder' => __DIR__ . '/..' . '/halaxa/json-machine/src/JsonDecoder/ItemDecoder.php',
+        'JsonMachine\\JsonDecoder\\PassThruDecoder' => __DIR__ . '/..' . '/halaxa/json-machine/src/JsonDecoder/PassThruDecoder.php',
+        'JsonMachine\\JsonDecoder\\StringOnlyDecoder' => __DIR__ . '/..' . '/halaxa/json-machine/src/JsonDecoder/StringOnlyDecoder.php',
+        'JsonMachine\\JsonDecoder\\ValidResult' => __DIR__ . '/..' . '/halaxa/json-machine/src/JsonDecoder/ValidResult.php',
+        'JsonMachine\\Parser' => __DIR__ . '/..' . '/halaxa/json-machine/src/Parser.php',
+        'JsonMachine\\PositionAware' => __DIR__ . '/..' . '/halaxa/json-machine/src/PositionAware.php',
+        'JsonMachine\\RecursiveItems' => __DIR__ . '/..' . '/halaxa/json-machine/src/RecursiveItems.php',
+        'JsonMachine\\ResumableIteratorAggregateProxy' => __DIR__ . '/..' . '/halaxa/json-machine/src/ResumableIteratorAggregateProxy.php',
+        'JsonMachine\\StreamChunks' => __DIR__ . '/..' . '/halaxa/json-machine/src/StreamChunks.php',
+        'JsonMachine\\StringChunks' => __DIR__ . '/..' . '/halaxa/json-machine/src/StringChunks.php',
+        'JsonMachine\\Tokens' => __DIR__ . '/..' . '/halaxa/json-machine/src/Tokens.php',
+        'JsonMachine\\TokensWithDebugging' => __DIR__ . '/..' . '/halaxa/json-machine/src/TokensWithDebugging.php',
+        'JsonMachine\\ValidJsonPointers' => __DIR__ . '/..' . '/halaxa/json-machine/src/ValidJsonPointers.php',
     );
 
     public static function getInitializer(ClassLoader $loader)

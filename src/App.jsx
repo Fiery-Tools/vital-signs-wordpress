@@ -38,13 +38,6 @@ export default function App() {
       component: <HomePage status={status} toast={toast} />
     },
     {
-      path: '/info',
-      label: 'Info',
-      icon: Info,
-      component: <InfoPage status={status} />
-    },
-
-    {
       path: '/vulnerabilities',
       label: 'Vulnerabilities',
       icon: Shield,
@@ -55,6 +48,12 @@ export default function App() {
       label: 'Core Files',
       icon: FileCode,
       component: <CoreFiles toast={toast} />
+    },
+    {
+      path: '/info',
+      label: 'Info',
+      icon: Info,
+      component: <InfoPage status={status} />
     },
     {
       path: '/roadmap',
