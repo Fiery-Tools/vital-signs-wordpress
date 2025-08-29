@@ -77,6 +77,14 @@ class WP_Vital_Signs_REST
         return current_user_can('manage_options');
       }
     ]);
+    register_rest_route('vital-signs/v1', '/clear-settings', [
+      'methods'  => 'POST',
+      'callback' => [$this, 'clear_all_settings'],
+      'permission_callback' => function () {
+        // Ensure only administrators can perform this destructive action.
+        return current_user_can('manage_options');
+      }
+    ]);
   }
   public function get_status()
   {
@@ -376,6 +384,7 @@ class WP_Vital_Signs_REST
       if (isset($vuln_details['software']) && is_array($vuln_details['software'])) {
         foreach ($vuln_details['software'] as $software) {
           foreach ($installed_plugins as $plugin_path => $plugin_data) {
+            $plugin_slug = dirname($plugin_path);
             if ($software['type'] === 'plugin' && $software['slug'] === $plugin_slug) {
               if (isset($software['affected_versions']) && is_array($software['affected_versions'])) {
                 foreach ($software['affected_versions'] as $version_range => $version_data) {
@@ -385,6 +394,7 @@ class WP_Vital_Signs_REST
                       'version' => $plugin_data['Version'],
                       'details_link' => $vuln_details["cve_link"] ?? '',
                       'slug' => $plugin_path,
+                      'severity' => $vuln_details["cvss"]["rating"],
                       'fixed_in' => isset($software['patched_versions']) ? implode(', ', $software['patched_versions']) : 'Not specified',
                     ];
                   }
@@ -493,5 +503,31 @@ class WP_Vital_Signs_REST
     $settings->set_setting('last_core_files_check', $scan_results);
 
     return new WP_REST_Response(['success' => true, 'message' => 'Core files check data saved.'], 200);
+  }
+
+   /**
+   * --- NEW METHOD ---
+   * Callback to clear all plugin settings from the database.
+   *
+   * @return WP_REST_Response
+   */
+  public function clear_all_settings()
+  {
+    $settings_instance = WP_Vital_Signs::get_instance();
+
+    // Calls the new method in your main plugin class
+    $deleted = $settings_instance->delete_all_settings();
+
+    if ($deleted) {
+      return new WP_REST_Response([
+        'success' => true,
+        'message' => 'All WP Vital Signs settings have been cleared.'
+      ], 200);
+    }
+
+    return new WP_REST_Response([
+      'success' => false,
+      'message' => 'Could not clear settings or no settings were found.'
+    ], 500);
   }
 }

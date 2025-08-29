@@ -4,6 +4,7 @@ import { ShieldCheck, AlertTriangle, CircleDot, Loader2, Play, RefreshCw, Zap, F
 import { useVirtualizer } from '@tanstack/react-virtual';
 
 import TopCard from './TopCard';
+import { FullPageLoader } from '../lib/utils';
 
 const CHUNK_SIZE = 25; // How many files to scan per "API call"
 const SCAN_DELAY_MS = 1000; // Delay to not overload the server
@@ -37,13 +38,6 @@ const saveCoreFileScanResults = async (scanData) => {
   }
 };
 
-const FullPageLoader = () => (
-  <div className="flex flex-col items-center justify-center p-12 bg-slate-50 rounded-lg">
-    <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-    <p className="mt-4 text-lg font-medium text-slate-700">Fetching core file list...</p>
-    <p className="text-slate-500">Please wait a moment.</p>
-  </div>
-);
 
 const StatusDisplay = ({ status }) => {
   const statusConfig = {
@@ -195,6 +189,34 @@ const CoreFileScanner = ({ toast }) => {
       setScanStatus('complete');
       setIsPaused(false);
       scanIndexRef.current = 0;
+
+
+      console.log("Scan complete. Preparing to save results to backend...");
+
+      // Prepare the payload
+      const finalResults = {
+        scanDate: new Date().toISOString(),
+        totalFiles: processedFiles.length,
+        issuesFound: processedFiles.filter(f => f.status === 'failed' || f.status === 'missing').length,
+        modified: processedFiles.filter(f => f.status === 'failed').map(f => f.name),
+        missing: processedFiles.filter(f => f.status === 'missing').map(f => f.name),
+      };
+
+      // Call the API function and show a toast notification based on the outcome.
+      const wasSaveSuccessful = await saveCoreFileScanResults(finalResults);
+      if (wasSaveSuccessful) {
+        toast.success('Scan results saved successfully.');
+      } else {
+        toast.error('Could not save scan results to the server.');
+      }
+
+
+
+
+
+
+
+
     }
   }, [files, isPaused]);
 
@@ -254,7 +276,7 @@ const CoreFileScanner = ({ toast }) => {
           )}
         </div>
 
-  {scanStatus === 'scanning' && (
+        {scanStatus === 'scanning' && (
           <div className="mt-4">
             <div className="flex justify-between items-center mb-1">
               <span className="text-sm font-medium text-blue-700">Scanning in progress...</span>

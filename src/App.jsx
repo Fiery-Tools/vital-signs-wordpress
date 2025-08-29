@@ -22,11 +22,11 @@ import {
   Info
 } from '@/lib/icons';
 import HomePage from './components/Home';
+import { MainLoader } from './lib/utils';
 
 
 export default function App() {
   const [status, setStatus] = useState(null);
-  const [vulnerabilities, setVulnerabilities] = useState(null);
   const location = useLocation();
 
   // Define all navigation tabs - easy to add more
@@ -48,7 +48,7 @@ export default function App() {
       path: '/vulnerabilities',
       label: 'Vulnerabilities',
       icon: Shield,
-      component: vulnerabilities ? <Vulnerabilities status={status} data={vulnerabilities} toast={toast} /> : <></>
+      component: <Vulnerabilities toast={toast} />
     },
     {
       path: '/core-files',
@@ -72,17 +72,14 @@ export default function App() {
       .then(res => res.json())
       .then(setStatus);
 
-    fetch('/wp-json/vital-signs/v1/vulnerabilities', {
-      headers: { 'X-WP-Nonce': VS_DATA.nonce }
-    })
-      .then(res => res.json())
-      .then(setVulnerabilities);
+
   }, []);
 
   if (!status) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      <span className="ml-2 text-gray-600">Loading...</span>
+        <div id="vs-plugin-wrapper">
+      <div id="vs-app" className="min-h-screen bg-primary">
+    <MainLoader/>
+    </div>
     </div>
   );
 

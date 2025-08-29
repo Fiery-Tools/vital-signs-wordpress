@@ -1,27 +1,151 @@
-import React, { useState } from 'react';
-import { AlertTriangle, Shield, ExternalLink, CheckCircle, Clock, AlertCircle, Loader2 } from '@/lib/icons';
-import toast from 'react-hot-toast';
+import React, { useState, useEffect } from 'react';
+import { Shield, AlertTriangle, CheckCircle, ExternalLink, AlertCircle } from '@/lib/icons';
+import { FullPageLoader } from '../lib/utils';
 
-// Reusable table component
-const VulnerabilityTable = ({ title, data, onAction, updatingItems = [], toast }) => {
-  const getSeverityColor = (vulnerability) => {
-    if (vulnerability.toLowerCase().includes('unauthenticated')) {
-      return 'text-red-600 bg-red-50';
-    } else if (vulnerability.toLowerCase().includes('authenticated')) {
-      return 'text-orange-600 bg-orange-50';
-    }
-    return 'text-yellow-600 bg-yellow-50';
+
+// Severity component
+const Severity = ({ severity }) => {
+  const severityConfig = {
+    'Critical': { color: 'bg-red-600', textColor: 'text-red-600', icon: AlertTriangle },
+    'High': { color: 'bg-red-500', textColor: 'text-red-500', icon: AlertTriangle },
+    'Medium': { color: 'bg-orange-500', textColor: 'text-orange-500', icon: AlertCircle },
+    'Low': { color: 'bg-yellow-500', textColor: 'text-yellow-500', icon: AlertCircle }
   };
 
-  const getSeverityIcon = (vulnerability) => {
-    if (vulnerability.toLowerCase().includes('unauthenticated')) {
-      return <AlertTriangle className="w-4 h-4" />;
-    } else if (vulnerability.toLowerCase().includes('authenticated')) {
-      return <AlertCircle className="w-4 h-4" />;
-    }
-    return <Clock className="w-4 h-4" />;
+  const config = severityConfig[severity] || severityConfig['Medium'];
+  const Icon = config.icon;
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-white ${config.color}`}>
+        <Icon className="w-3 h-3" />
+        {severity}
+      </span>
+    </div>
+  );
+};
+
+// Summary Stats Component
+const SummaryStats = ({ data }) => {
+  // Process data to get statistics
+  const processData = () => {
+    let totalVulns = 0;
+    let criticalCount = 0;
+    let highCount = 0;
+    let fixableCount = 0;
+    let unfixableCount = 0;
+
+    // Process plugins
+    Object.values(data.plugins || {}).forEach(pluginVulns => {
+      pluginVulns.forEach(vuln => {
+        totalVulns++;
+        if (vuln.severity === 'Critical') criticalCount++;
+        if (vuln.severity === 'High') highCount++;
+        if (vuln.fixed_in) {
+          fixableCount++;
+        } else {
+          unfixableCount++;
+        }
+      });
+    });
+
+    // Process themes (similar structure)
+    Object.values(data.themes || {}).forEach(themeVulns => {
+      themeVulns.forEach(vuln => {
+        totalVulns++;
+        if (vuln.severity === 'Critical') criticalCount++;
+        if (vuln.severity === 'High') highCount++;
+        if (vuln.fixed_in) {
+          fixableCount++;
+        } else {
+          unfixableCount++;
+        }
+      });
+    });
+
+    return {
+      total: totalVulns,
+      critical: criticalCount,
+      high: highCount,
+      fixable: fixableCount,
+      unfixable: unfixableCount
+    };
   };
 
+  const stats = processData();
+
+  return (
+    <div className="grid md:grid-cols-3 gap-6 mb-8 w-full">
+      {/* Total Vulnerabilities */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-600">Total Vulnerabilities</p>
+            <div className="flex items-baseline gap-2 mt-2">
+              <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+              <p className="text-xs text-gray-500">
+                {stats.total === 1 ? 'issue found' : 'issues found'}
+              </p>
+            </div>
+          </div>
+          <div className="p-3 bg-red-50 rounded-full">
+            <AlertTriangle className="w-6 h-6 text-red-600" />
+          </div>
+        </div>
+      </div>
+
+      {/* Critical Issues */}
+      {/* <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-600">Critical Issues</p>
+            <div className="flex items-baseline gap-2 mt-2">
+              <p className="text-3xl font-bold text-red-600">{stats.critical}</p>
+              <p className="text-xs text-gray-500">immediate attention</p>
+            </div>
+          </div>
+          <div className="p-3 bg-red-50 rounded-full">
+            <AlertTriangle className="w-6 h-6 text-red-600" />
+          </div>
+        </div>
+      </div> */}
+
+      {/* High Severity Issues */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-600">High Severity</p>
+            <div className="flex items-baseline gap-2 mt-2">
+              <p className="text-3xl font-bold text-orange-600">{stats.high}</p>
+              <p className="text-xs text-gray-500">address soon</p>
+            </div>
+          </div>
+          <div className="p-3 bg-orange-50 rounded-full">
+            <AlertCircle className="w-6 h-6 text-orange-600" />
+          </div>
+        </div>
+      </div>
+
+      {/* Fixable Issues */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-600">Fixable Issues</p>
+            <div className="flex items-baseline gap-2 mt-2">
+              <p className="text-3xl font-bold text-green-600">{stats.fixable}</p>
+              <p className="text-xs text-gray-500">updates available</p>
+            </div>
+          </div>
+          <div className="p-3 bg-green-50 rounded-full">
+            <CheckCircle className="w-6 h-6 text-green-600" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const VulnerabilityTable = ({ title, data, onAction }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
@@ -65,14 +189,10 @@ const VulnerabilityTable = ({ title, data, onAction, updatingItems = [], toast }
                     <div className="font-medium text-gray-900">{item.plugin}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-start gap-2">
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(item.vulnerability)}`}>
-                        {getSeverityIcon(item.vulnerability)}
-                        {item.vulnerability.includes('Unauthenticated') ? 'Critical' :
-                         item.vulnerability.includes('Authenticated') ? 'High' : 'Medium'}
-                      </span>
+                    <div className="flex items-start gap-2 mb-2">
+                      <Severity severity={item.severity} />
                     </div>
-                    <div className="text-sm text-gray-600 mt-1 max-w-md">
+                    <div className="text-sm text-gray-600 max-w-md">
                       {item.vulnerability}
                     </div>
                   </td>
@@ -88,10 +208,8 @@ const VulnerabilityTable = ({ title, data, onAction, updatingItems = [], toast }
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex gap-2">
-
-
-
-                        {item.fixed_in && <a
+                      {item.fixed_in && (
+                        <a
                           href={`/wp-admin/plugins.php?s=${item.slug.replace(/.*\//, '')}&plugin_status=all`}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -99,28 +217,31 @@ const VulnerabilityTable = ({ title, data, onAction, updatingItems = [], toast }
                           className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
                         >
                           <CheckCircle className="w-3 h-3" />
-                          {/* Update */}
-                        </a>}
+                          Update
+                        </a>
+                      )}
 
-                        <button
-                          onClick={() => onAction('deactivate', item, index)}
-                          title="Deactivate plugin"
-                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
-                        >
-                          <AlertTriangle className="w-3 h-3" />
-                          {/* Deactivate */}
-                        </button>
+                      <button
+                        onClick={() => onAction('deactivate', item, index)}
+                        title="Deactivate plugin"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+                      >
+                        <AlertTriangle className="w-3 h-3" />
+                        Deactivate
+                      </button>
 
-                      {item.details_link && <a
+                      {item.details_link && (
+                        <a
                           href={item.details_link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          title="View details"
-                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-
-                      </a>}
+                          title="View vulnerability details"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          Details
+                        </a>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -133,11 +254,21 @@ const VulnerabilityTable = ({ title, data, onAction, updatingItems = [], toast }
   );
 };
 
-// Main dashboard component
-const VulnerabilityDashboard = ({ data }) => {
+// Main Dashboard Component
+const VulnerabilityDashboard = ({ toast }) => {
   const [actionLog, setActionLog] = useState([]);
   const [updatingItems, setUpdatingItems] = useState([]);
-  const [vulnerabilities, setVulnerabilities] = useState(data);
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    fetch('/wp-json/vital-signs/v1/vulnerabilities', {
+      headers: { 'X-WP-Nonce': VS_DATA.nonce }
+    })
+      .then(res => res.json())
+      .then(setData);
+  }, []);
+
+  if (!data) return <FullPageLoader section="vulnerabilities" />;
 
 
   const deactivatePlugin = async (slug) => {
@@ -162,14 +293,33 @@ const VulnerabilityDashboard = ({ data }) => {
     }
   };
 
-  // Transform data for table display
-  const pluginVulnerabilities = Object.entries(vulnerabilities.plugins).flatMap(([plugin, vulns]) =>
-    vulns.map(vuln => ({ ...vuln, plugin }))
-  );
+  // Convert data structure to flat array for table
+  const processDataForTable = (data) => {
+    const tableData = [];
 
-  const themeVulnerabilities = vulnerabilities.themes.map(theme => ({ ...theme, plugin: theme.name }));
+    // Process plugins
+    Object.entries(data.plugins || {}).forEach(([pluginName, vulnerabilities]) => {
+      vulnerabilities.forEach(vuln => {
+        tableData.push({
+          plugin: pluginName,
+          ...vuln
+        });
+      });
+    });
 
-  // Handle action button clicks
+    // Process themes
+    Object.entries(data.themes || {}).forEach(([themeName, vulnerabilities]) => {
+      vulnerabilities.forEach(vuln => {
+        tableData.push({
+          plugin: themeName,
+          ...vuln
+        });
+      });
+    });
+
+    return tableData;
+  };
+
   const handleAction = async (action, item, index) => {
     const timestamp = new Date().toLocaleTimeString();
     const itemKey = `${item.plugin}-${index}`;
@@ -292,97 +442,23 @@ const VulnerabilityDashboard = ({ data }) => {
     }
   };
 
-  const totalVulnerabilities = pluginVulnerabilities.length + themeVulnerabilities.length;
-  const criticalCount = [...pluginVulnerabilities, ...themeVulnerabilities]
-    .filter(item => item.vulnerability.toLowerCase().includes('unauthenticated')).length;
+  const tableData = processDataForTable(data);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">WordPress Security Dashboard</h1>
-          <p className="text-gray-600">Monitor and resolve plugin and theme vulnerabilities</p>
-
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-            <div className="bg-white rounded-lg p-4 border border-gray-200">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <AlertTriangle className="w-6 h-6 text-red-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Total Vulnerabilities</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalVulnerabilities}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg p-4 border border-gray-200">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <AlertCircle className="w-6 h-6 text-red-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Critical Issues</p>
-                  <p className="text-2xl font-bold text-red-600">{criticalCount}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg p-4 border border-gray-200">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Shield className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Fixable Issues</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {[...pluginVulnerabilities, ...themeVulnerabilities].filter(item => item.fixed_in).length}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <h1 className="text-3xl font-bold text-gray-900">WordPress Security Dashboard</h1>
+          <p className="text-gray-600 mt-2">Monitor and resolve plugin and theme vulnerabilities</p>
         </div>
 
-        {/* Tables */}
-        <div className="space-y-8">
-          <VulnerabilityTable
-            title="Plugin Vulnerabilities"
-            data={pluginVulnerabilities}
-            onAction={handleAction}
-            updatingItems={updatingItems}
-            toast={toast}
-          />
+        <SummaryStats data={data} />
 
-          <VulnerabilityTable
-            title="Theme Vulnerabilities"
-            data={themeVulnerabilities}
-            onAction={handleAction}
-            updatingItems={updatingItems}
-            toast={toast}
-          />
-        </div>
-
-        {/* Action Log */}
-        {actionLog.length > 0 && (
-          <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Recent Actions</h3>
-            </div>
-            <div className="p-6">
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {actionLog.map((log, index) => (
-                  <div key={index} className="flex items-center gap-3 text-sm text-gray-600 p-2 bg-gray-50 rounded">
-                    <span className="font-mono text-xs text-gray-500">{log.timestamp}</span>
-                    <span>{log.message}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+        <VulnerabilityTable
+          title="Plugin Vulnerabilities"
+          data={tableData}
+          onAction={handleAction}
+        />
       </div>
     </div>
   );

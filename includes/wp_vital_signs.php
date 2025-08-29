@@ -198,4 +198,13 @@ class WP_Vital_Signs
     // will not update the value if the option already exists.
     add_option('wpvs_settings', $default_settings, '', 'yes');
   }
+
+  public function delete_all_settings()
+  {
+    // Clear the settings property in the current instance to reflect the change immediately.
+    $this->settings = array();
+
+    // Delete the option from the WordPress database.
+    return delete_option(self::OPTION_NAME);
+  }
 }
