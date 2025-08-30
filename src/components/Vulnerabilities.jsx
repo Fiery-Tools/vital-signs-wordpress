@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, AlertTriangle, CheckCircle, ExternalLink, AlertCircle } from '@/lib/icons';
 import { FullPageLoader } from '../lib/utils';
+import TopCard from './TopCard';
 
 
 // Severity component
@@ -147,7 +148,7 @@ const SummaryStats = ({ data }) => {
 
 const VulnerabilityTable = ({ title, data, onAction }) => {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden -mt-4">
       <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
           <Shield className="w-5 h-5 text-blue-600" />
@@ -445,12 +446,13 @@ const VulnerabilityDashboard = ({ toast }) => {
   const tableData = processDataForTable(data);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">WordPress Security Dashboard</h1>
-          <p className="text-gray-600 mt-2">Monitor and resolve plugin and theme vulnerabilities</p>
-        </div>
+        <div className="w-full bg-secondary p-4">
+
+        <TopCard
+          title="WP Vital Signs | Vulnerabilities"
+          subtitle="Monitor and resolve plugin and theme vulnerabilities"
+        />
+
 
         <SummaryStats data={data} />
 
@@ -460,7 +462,7 @@ const VulnerabilityDashboard = ({ toast }) => {
           onAction={handleAction}
         />
       </div>
-    </div>
+
   );
 };
 

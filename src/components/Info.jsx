@@ -166,7 +166,7 @@ const WpStatusGrid = ({ statusData }) => {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 -mt-2">
       {statusData.map((sectionData, index) => (
         <SectionTable
           key={index}
@@ -186,7 +186,7 @@ const Info = ({ status }) => {
   const data = status
 
   return (
-    <div className="w-full bg-gray-50 p-6">
+    <div className="w-full bg-secondary p-4">
       <TopCard title="WP Vital Signs | Info" subtitle="Information about your WordPress site" />
       <WpStatusGrid statusData={data} />
     </div>

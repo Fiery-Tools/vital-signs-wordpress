@@ -1,9 +1,11 @@
 const TopCard = ({ title, subtitle }) => {
   return (
-    <div className="bg-white shadow-md rounded-lg px-4 py-2 mb-4">
-      <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
-      <p className="mt-2 text-gray-600">{subtitle}</p>
-    </div>
+    <>
+      <div className="bg-white shadow-md rounded-lg px-4 py-2 mb-4">
+        <h2 className="text-3xl font-bold text-gray-900">{title}</h2>
+        <p className="text-gray-600 mt-2">{subtitle}</p>
+      </div>
+    </>
   );
 }
 
