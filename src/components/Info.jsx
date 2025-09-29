@@ -9,7 +9,6 @@ const TopCard = ({ title, subtitle }) => (
   </div>
 );
 
-
 // Helper function to get icon and color for each metric
 const getMetricStyle = (key) => {
   const styles = {
@@ -187,7 +186,7 @@ const Info = ({ status }) => {
 
   return (
     <div className="w-full bg-secondary p-4">
-      <TopCard title="WP Vital Signs | Info" subtitle="Information about your WordPress site" />
+      <TopCard title="Vital Signs | Info" subtitle="Information about your WordPress site" />
       <WpStatusGrid statusData={data} />
     </div>
   );

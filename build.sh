@@ -4,8 +4,8 @@
 # It creates a zip file with all files in the root, as required.
 
 # --- Configuration ---
-PLUGIN_SLUG="wp-vital-signs"
-ZIP_FILE="wp-vital-signs.zip"
+PLUGIN_SLUG="vital-signs"
+ZIP_FILE="vital-signs.zip"
 RELEASE_DIR="release"
 VITE_OUTPUT_DIR="build"
 
@@ -40,7 +40,10 @@ cp -r \
   vendor \
   languages \
   includes \
-  *.php \
+  uninstall.php \
+  composer.json \
+  composer.lock \
+  vital-signs.php \
   readme.txt \
   $RELEASE_DIR/
 

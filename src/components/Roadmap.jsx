@@ -61,7 +61,7 @@ const Roadmap = () => {
 
   return (
     <div className="w-full bg-secondary p-4">
-      <TopCard title="WP Vital Signs | Roadmap" subtitle="A roadmap of our future plans" />
+      <TopCard title="Vital Signs | Roadmap" subtitle="A roadmap of our future plans" />
       <div className="space-y-6">
         {roadmapPhases.map((phase) => (
           <div key={phase.phase} className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">

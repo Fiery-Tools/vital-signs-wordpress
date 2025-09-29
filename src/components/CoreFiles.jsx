@@ -15,8 +15,8 @@ const saveCoreFileScanResults = async (scanData) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // VS_DATA.nonce should be available globally from your wp_localize_script call
-        'X-WP-Nonce': VS_DATA.nonce,
+        // VITAL_SIGNS_DATA.nonce should be available globally from your wp_localize_script call
+        'X-WP-Nonce': VITAL_SIGNS_DATA.nonce,
       },
       body: JSON.stringify(scanData),
     });
@@ -136,7 +136,7 @@ const CoreFileScanner = ({ toast }) => {
 
   useEffect(() => {
     isCancelledRef.current = false;
-    fetch('/wp-json/vital-signs/v1/checksums', { headers: { 'X-WP-Nonce': VS_DATA.nonce } })
+    fetch('/wp-json/vital-signs/v1/checksums', { headers: { 'X-WP-Nonce': VITAL_SIGNS_DATA.nonce } })
       .then(res => res.json())
       .then(data => { // <-- 1. Accept the full 'data' object
         if (isCancelledRef.current) return;
@@ -183,7 +183,7 @@ const CoreFileScanner = ({ toast }) => {
       const chunk = processedFiles.slice(scanIndexRef.current, scanIndexRef.current + CHUNK_SIZE);
       const processedChunk = await fetch(`/wp-json/vital-signs/v1/checksum_chunk`, {
         method: 'POST',
-        headers: { 'X-WP-Nonce': VS_DATA.nonce, 'Content-Type': 'application/json' },
+        headers: { 'X-WP-Nonce': VITAL_SIGNS_DATA.nonce, 'Content-Type': 'application/json' },
         body: JSON.stringify({ chunk }),
       }).then(res => res.json());
 
@@ -255,7 +255,7 @@ const CoreFileScanner = ({ toast }) => {
 
   return (
     <div className="w-full bg-secondary p-4">
-      <TopCard title="WP Vital Signs | Core Files Scanner" subtitle="Compares your WordPress core files against official checksums to detect unauthorized changes." />
+      <TopCard title="Vital Signs | Core Files Scanner" subtitle="Compares your WordPress core files against official checksums to detect unauthorized changes." />
       <div className="bg-white p-4 border border-slate-200 rounded-lg shadow-sm">
         <div className="flex items-center gap-4">
           <button onClick={scanStatus === 'complete' ? handleReset : handleStartScan} className="inline-flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700">

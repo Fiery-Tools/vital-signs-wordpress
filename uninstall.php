@@ -2,7 +2,7 @@
 /**
  * Fired when the plugin is uninstalled.
  *
- * @package WP_Vital_Signs
+ * @package Vital_Signs
  */
 
 // If uninstall is not called from WordPress, exit.

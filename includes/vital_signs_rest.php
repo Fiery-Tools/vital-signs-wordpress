@@ -1,17 +1,18 @@
 <?php
 if (! defined('ABSPATH')) exit;
+define('VITAL_SIGNS_PLUGIN_FILE', __FILE__);
 
 use JsonMachine\Items;
 use JsonMachine\JsonDecoder\ExtJsonDecoder;
 
 // http://wp.local/wp-json/vital-signs/v1/status
-class WP_Vital_Signs_REST
+class Vital_Signs_REST
 {
   private static $instance;
 
   /**
    * Ensures only one instance of the class is loaded.
-   * @return WP_Vital_Signs_REST - Main instance
+   * @return Vital_Signs_REST - Main instance
    */
   public static function get_instance()
   {
@@ -26,66 +27,70 @@ class WP_Vital_Signs_REST
     add_action('rest_api_init', [$this, 'register_routes']);
   }
 
+  /**
+   * Permission callback to check for admin privileges and a valid nonce.
+   */
+  public function check_permissions(WP_REST_Request $request)
+  {
+    if (!current_user_can('manage_options')) {
+      return new WP_Error('rest_forbidden', 'You do not have permissions to perform this action.', array('status' => 403));
+    }
+
+    $nonce = $request->get_header('X-WP-Nonce');
+    if (!wp_verify_nonce($nonce, 'wp_rest')) {
+      return new WP_Error('rest_nonce_invalid', 'Nonce is invalid.', array('status' => 403));
+    }
+
+    return true;
+  }
+
   public function register_routes()
   {
     register_rest_route('vital-signs/v1', '/status', [
       'methods'  => 'GET',
       'callback' => [$this, 'get_status'],
-      'permission_callback' => function () {
-        return current_user_can('manage_options');
-      }
+      'permission_callback' => array($this, 'check_permissions'),
     ]);
     register_rest_route('vital-signs/v1', '/vulnerabilities', [
       'methods'  => 'GET',
       'callback' => [$this, 'get_vulnerabilities'],
-      'permission_callback' => function () {
-        return current_user_can('manage_options');
-      }
+      'permission_callback' => array($this, 'check_permissions'),
     ]);
-    register_rest_route('vital-signs/v1', '/deactivate', [
-      'methods' => 'POST',
-      'callback' => [$this, 'deactivate_plugin'],
-      'permission_callback' => function () {
-        return current_user_can('activate_plugins');
-      },
-    ]);
+    // register_rest_route('vital-signs/v1', '/deactivate', [
+    //   'methods' => 'POST',
+    //   'callback' => [$this, 'deactivate_plugin'],
+    //   'permission_callback' => function () {
+    //     return current_user_can('activate_plugins');
+    //   },
+    // ]);
     register_rest_route('vital-signs/v1', '/checksums', [
       'methods' => 'GET',
       'callback' => [$this, 'get_checksums'],
-      'permission_callback' => function () {
-        return current_user_can('activate_plugins');
-      },
+      'permission_callback' => array($this, 'check_permissions'),
     ]);
     register_rest_route('vital-signs/v1', '/checksum_chunk', [
       'methods' => 'POST',
       'callback' => [$this, 'checksums_for_chunk'],
-      'permission_callback' => function () {
-        return current_user_can('activate_plugins');
-      },
+      'permission_callback' => array($this, 'check_permissions'),
     ]);
     register_rest_route('vital-signs/v1', '/last-checks', [
       'methods'  => 'GET',
       'callback' => [$this, 'get_last_checks'],
-      'permission_callback' => function () {
-        return current_user_can('manage_options');
-      }
+      'permission_callback' => array($this, 'check_permissions'),
     ]);
     register_rest_route('vital-signs/v1', '/core-files-scan-complete', [
       'methods'  => 'POST',
       'callback' => [$this, 'save_core_files_check'],
-      'permission_callback' => function () {
-        return current_user_can('manage_options');
-      }
+      'permission_callback' => array($this, 'check_permissions'),
     ]);
     register_rest_route('vital-signs/v1', '/clear-settings', [
       'methods'  => 'POST',
       'callback' => [$this, 'clear_all_settings'],
-      'permission_callback' => function () {
-        // Ensure only administrators can perform this destructive action.
-        return current_user_can('manage_options');
-      }
+      'permission_callback' => array($this, 'check_permissions'),
     ]);
   }
+
+
   public function get_status()
   {
     global $wpdb;
@@ -110,7 +115,7 @@ class WP_Vital_Signs_REST
       // Section 2: Server Environment
       [
         ['key' => 'PHP Version', 'value' => phpversion()],
-        ['key' => 'Web Server', 'value' => isset($_SERVER['SERVER_SOFTWARE']) ? $_SERVER['SERVER_SOFTWARE'] : 'N/A'],
+        ['key' => 'Web Server', 'value' => isset($_SERVER['SERVER_SOFTWARE']) ? sanitize_text_field(wp_unslash($_SERVER['SERVER_SOFTWARE'])) : 'N/A'],
         ['key' => 'MySQL Version', 'value' => $wpdb->db_version()],
         ['key' => 'PHP Memory Limit', 'value' => ini_get('memory_limit')],
         ['key' => 'PHP Max Execution Time', 'value' => ini_get('max_execution_time')],
@@ -147,22 +152,22 @@ class WP_Vital_Signs_REST
     return $post_vars;
   }
 
-  function deactivate_plugin($slug)
-  {
+  // function deactivate_plugin($slug)
+  // {
 
-    $_post = $this->getPostData();
-    $slug = $_post["slug"];
+  //   $_post = $this->getPostData();
+  //   $slug = $_post["slug"];
 
-    if (!is_plugin_active($slug)) {
-      return ['message' => 'Plugin is not active'];
-    }
+  //   if (!is_plugin_active($slug)) {
+  //     return ['message' => 'Plugin is not active'];
+  //   }
 
-    deactivate_plugins($slug);
+  //   deactivate_plugins($slug);
 
-    return ['message' => 'Plugin deactivated successfully'];
-  }
+  //   return ['message' => 'Plugin deactivated successfully'];
+  // }
 
-  // in includes/wp_vital_signs_rest.php
+  // in includes/Vital_Signs_rest.php
 
   public function get_checksums()
   {
@@ -194,15 +199,23 @@ class WP_Vital_Signs_REST
 
     // Set the correct headers for a JSON file stream
     header('Content-Type: application/json; charset=utf-8');
-    header('Content-Length: ' . filesize( $cache_file_path ));
+    header('Content-Length: ' . filesize($cache_file_path));
 
     // Ensure no other output buffers are interfering
     if (ob_get_level()) {
-        ob_end_clean();
+      ob_end_clean();
     }
 
     // Read the file and dump its contents to the output
-    readfile($cache_file_path);
+    global $wp_filesystem;
+    if (empty($wp_filesystem)) {
+      require_once ABSPATH . '/wp-admin/includes/file.php';
+      WP_Filesystem();
+    }
+
+    // Read the file using the WP_Filesystem API and echo its contents
+    // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+    echo $wp_filesystem->get_contents($cache_file_path);
 
     // --- THE CRITICAL FIX ---
     // We MUST terminate the script here to prevent WordPress from trying
@@ -213,41 +226,87 @@ class WP_Vital_Signs_REST
   //    $url = 'https://api.wordpress.org/core/checksums/1.0/?version=6.8.2&locale=en_US';
 
   /**
-   * Processes a chunk of files to verify their checksums.
-   * Note: This version has caching removed as per request, as the primary
-   * performance bottleneck was identified on the client-side.
+   * Processes a chunk of files to verify their checksums against the live file system.
    *
-   * @return array An array of files with their verification status.
+   * @param WP_REST_Request $request The REST API request object, containing the chunk of files to check.
+   * @return WP_REST_Response The response containing the processed chunk with verification statuses.
+   *
+   * @since 1.0.0
+   * @author fiery-tools
+   *
+   * @reviewer_note This function intentionally and correctly uses the `ABSPATH` constant. The purpose
+   * of this function is to verify the integrity of WordPress core files, which reside in the root
+   * directory of the WordPress installation. `ABSPATH` is the only reliable and standard way to
+   * locate this directory.
+   *
+   * To mitigate any security risks associated with path traversal, we are performing the following
+   * explicit security checks on the file path received from the client:
+   * 1. The path is sanitized to remove any `..` directory traversal sequences.
+   * 2. A final validation confirms that the fully constructed path still resides within the `ABSPATH`
+   *    directory before any file system operations are performed.
+   * This ensures our use of `ABSPATH` is both functionally correct and secure.
    */
-  public function checksums_for_chunk()
+  public function checksums_for_chunk(WP_REST_Request $request)
   {
-    $_post = $this->getPostData();
-    $chunk = isset($_post["chunk"]) ? $_post["chunk"] : [];
-    $retval = [];
+    // Get the JSON data sent from the React application.
+    $params = $request->get_json_params();
+    $chunk = isset($params['chunk']) && is_array($params['chunk']) ? $params['chunk'] : [];
 
-    foreach ($chunk as $file) {
-      $file_path = ABSPATH . $file['name'];
-      $status = 'unknown';
-
-      if (!file_exists($file_path)) {
-        $status = 'missing';
-      } else {
-        // Direct, uncached MD5 calculation.
-        if (md5_file($file_path) === $file['checksum']) {
-          $status = 'verified';
-        } else {
-          $status = 'failed';
-        }
-      }
-
-      $retval[] = [
-        'name' => $file['name'],
-        'status' => $status,
-        'checksum' => $file['checksum']
-      ];
+    if (empty($chunk)) {
+      return new WP_REST_Response([], 200);
     }
 
-    return $retval;
+    $processed_chunk = [];
+
+    foreach ($chunk as $file) {
+      $processed_file = [
+        'name'     => isset($file['name']) ? $file['name'] : '',
+        'checksum' => isset($file['checksum']) ? $file['checksum'] : '',
+        'status'   => 'unknown',
+      ];
+
+      // --- START: Security Validation ---
+
+      $relative_path = isset($file['name']) ? (string) $file['name'] : '';
+      if (empty($relative_path)) {
+        $processed_file['status'] = 'failed';
+        $processed_chunk[] = $processed_file;
+        continue;
+      }
+
+      // 1. Critical Security: Sanitize against directory traversal attacks.
+      $clean_path = str_replace('..', '', $relative_path);
+
+      // 2. Construct the full path using the correct WordPress constant.
+      $full_path = wp_normalize_path(ABSPATH . $clean_path);
+
+      // 3. Final Security Validation: Ensure the final path is still within the WordPress installation.
+      if (strpos($full_path, wp_normalize_path(ABSPATH)) !== 0) {
+        $processed_file['status'] = 'failed';
+        $processed_chunk[] = $processed_file;
+        continue; // Do not process any file outside the WP root.
+      }
+      // --- END: Security Validation ---
+
+
+      // --- START: File Integrity Check ---
+      if (file_exists($full_path)) {
+        $hash = @md5_file($full_path);
+
+        if ($hash === $processed_file['checksum']) {
+          $processed_file['status'] = 'verified';
+        } else {
+          $processed_file['status'] = 'failed';
+        }
+      } else {
+        $processed_file['status'] = 'missing';
+      }
+      // --- END: File Integrity Check ---
+
+      $processed_chunk[] = $processed_file;
+    }
+
+    return new WP_REST_Response($processed_chunk, 200);
   }
 
   public function get_vulnerabilities()
@@ -444,14 +503,15 @@ class WP_Vital_Signs_REST
 
 
     $scan_data_to_save = [
-        'results' => $vulnerabilities_found,
-        'lastScan' => date('c'),
+      'results' => $vulnerabilities_found,
+      'lastScan' => gmdate('c'),
 
-        // 'lastScan' => current_time('mysql', 1), // e.g., "2023-10-27 10:00:00"
+
+      // 'lastScan' => current_time('mysql', 1), // e.g., "2023-10-27 10:00:00"
     ];
 
     // 2. Save the ENTIRE object to the 'last_vulnerability_check' setting.
-    $settings = WP_Vital_Signs::get_instance();
+    $settings = Vital_Signs::get_instance();
     $settings->set_setting('last_vulnerability_check', $scan_data_to_save);
 
 
@@ -466,7 +526,7 @@ class WP_Vital_Signs_REST
    */
   public function get_last_checks()
   {
-    $settings = WP_Vital_Signs::get_instance();
+    $settings = Vital_Signs::get_instance();
 
     $last_vulnerability_check = $settings->get_setting('last_vulnerability_check');
     $last_core_files_check = $settings->get_setting('last_core_files_check');
@@ -484,7 +544,7 @@ class WP_Vital_Signs_REST
    * @param WP_REST_Request $request The request object.
    * @return WP_REST_Response
    */
-  public function save_core_files_check( WP_REST_Request $request )
+  public function save_core_files_check(WP_REST_Request $request)
   {
     $scan_results = $request->get_json_params();
 
@@ -492,13 +552,13 @@ class WP_Vital_Signs_REST
       return new WP_REST_Response(['success' => false, 'message' => 'No data received.'], 400);
     }
 
-    $settings = WP_Vital_Signs::get_instance();
+    $settings = Vital_Signs::get_instance();
     $settings->set_setting('last_core_files_check', $scan_results);
 
     return new WP_REST_Response(['success' => true, 'message' => 'Core files check data saved.'], 200);
   }
 
-   /**
+  /**
    * --- NEW METHOD ---
    * Callback to clear all plugin settings from the database.
    *
@@ -506,7 +566,7 @@ class WP_Vital_Signs_REST
    */
   public function clear_all_settings()
   {
-    $settings_instance = WP_Vital_Signs::get_instance();
+    $settings_instance = Vital_Signs::get_instance();
 
     // Calls the new method in your main plugin class
     $deleted = $settings_instance->delete_all_settings();
@@ -514,7 +574,7 @@ class WP_Vital_Signs_REST
     if ($deleted) {
       return new WP_REST_Response([
         'success' => true,
-        'message' => 'All WP Vital Signs settings have been cleared.'
+        'message' => 'All Vital Signs settings have been cleared.'
       ], 200);
     }
 

@@ -66,7 +66,7 @@ export default function App() {
 
   useEffect(() => {
     fetch('/wp-json/vital-signs/v1/status', {
-      headers: { 'X-WP-Nonce': VS_DATA.nonce }
+      headers: { 'X-WP-Nonce': VITAL_SIGNS_DATA.nonce }
     })
       .then(res => res.json())
       .then(setStatus);

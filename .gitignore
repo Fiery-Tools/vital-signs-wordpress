@@ -2,3 +2,5 @@ node_modules
 build
 .env
 /wp-vital-signs.zip
+/context.sh
+/.context

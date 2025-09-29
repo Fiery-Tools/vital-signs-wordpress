@@ -1,18 +1,18 @@
-=== WP Vital Signs ===
+=== Vital Signs ===
 Contributors: fierytools
-Tags: security, monitoring, health check, core files, vulnerability scanner, site health, admin
+Tags: security, core files, vulnerabilities, site health, admin
 Requires at least: 5.8
-Tested up to: 6.5
+Tested up to: 6.8
 Requires PHP: 7.4
 Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-A lightweight yet powerful security and monitoring tool to keep your WordPress site healthy. Scan core files, check for vulnerabilities in plugins & themes, and view a detailed system status report.
+A powerful security and health monitoring tool. Scan core files, check for plugin vulnerabilities, and view a detailed system status report.
 
 == Description ==
 
-WP Vital Signs is your essential health monitor for your WordPress website. In an ecosystem with thousands of plugins and themes, keeping track of your site's integrity is critical. This plugin provides a suite of powerful tools in a clean, modern interface to help you identify potential issues before they become serious problems.
+Vital Signs provides a suite of powerful security tools Including Vulnerabilities scan and Core-files checksum scanner.
 
 **Core Features:**
 
@@ -21,11 +21,11 @@ WP Vital Signs is your essential health monitor for your WordPress website. In a
 *   **System Status Report:** A detailed and easy-to-read overview of your WordPress and server environment, perfect for debugging or providing information to support.
 *   **Modern, Fast Interface:** Built with React, the interface is designed to be fast, intuitive, and a pleasure to use.
 
-Whether you're a developer managing client sites or a site owner who values security, WP Vital Signs provides the clarity you need to maintain a healthy and secure website.
+Whether you're a developer managing client sites or a site owner who values security, Vital Signs provides the clarity you need to maintain a healthy and secure website.
 
 == Installation ==
 
-1.  Upload the `wp-vital-signs` folder to the `/wp-content/plugins/` directory.
+1.  Upload the `vital-signs` folder to the `/wp-content/plugins/` directory.
 2.  Activate the plugin through the 'Plugins' menu in WordPress.
 3.  Find the "Vital Signs" menu item in your WordPress admin dashboard to access the scanner and reports.
 
@@ -33,7 +33,7 @@ Whether you're a developer managing client sites or a site owner who values secu
 
 = Does this plugin slow down my site? =
 
-No. WP Vital Signs is designed with performance in mind. All scans are initiated manually by you and run as client-side processes that communicate with your server in small, efficient chunks. It does not run any persistent background processes that would slow down your site's frontend.
+No. Vital Signs is designed with performance in mind. All scans are initiated manually by you and run as client-side processes that communicate with your server in small, efficient chunks. It does not run any persistent background processes that would slow down your site's frontend.
 
 = Where does the vulnerability data come from? =
 
@@ -55,3 +55,25 @@ Yes, this version of the plugin is completely free to use.
 
 = 1.0.0 =
 *   Initial public release.
+
+== Source Code ==
+
+This plugin, like many modern WordPress tools, uses build processes (NPM, Vite) to compile and minify its JavaScript and CSS assets for performance. The original, human-readable source code is publicly available for review, modification, and contribution.
+
+*   **Public Repository:** [https://github.com/Fiery-Tools/vital-signs-wordpress](https://github.com/Fiery-Tools/vital-signs-wordpress)
+*   **Build Instructions:** To compile the source code yourself, please ensure you have Node.js and npm installed. Clone the repository, run `npm install` to install dependencies, and then `npm run build` to generate the production files.
+
+== External Services ==
+
+This plugin connects to the following external services to perform its security checks:
+
+*   **Service:** WordPress.org Core Checksums API
+    *   **Purpose:** To fetch the official checksums (MD5 hashes) for WordPress core files. This is essential for the "Core Files" scanner to verify file integrity.
+    *   **Data Sent:** The current WordPress version and locale (e.g., 6.4.2, en_US) are sent to retrieve the correct checksum list. No personal or site-identifying data is transmitted.
+    *   **Terms of Service:** The WordPress.org API is governed by the general WordPress.org terms of service. More information can be found at [https://wordpress.org/about/privacy/](https://wordpress.org/about/privacy/).
+
+*   **Service:** Wordfence Intelligence Vulnerability Database API
+    *   **Purpose:** To check installed plugins and themes against a comprehensive, up-to-date database of known vulnerabilities.
+    *   **Data Sent:** The slugs and version numbers of your installed plugins and themes are sent to the API. This information is not tied to your specific website or user data.
+    *   **Terms of Service:** [https://www.wordfence.com/terms-of-service/](https://www.wordfence.com/terms-of-service/)
+    *   **Privacy Policy:** [https://www.wordfence.com/privacy-policy/](https://www.wordfence.com/privacy-policy/)

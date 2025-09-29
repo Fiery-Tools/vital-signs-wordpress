@@ -220,7 +220,7 @@ const Home = ({ vulnerabilities, coreFileScan, status, toast }) => {
 
   const handleClearSettings = async () => {
     // CRITICAL: Always ask for confirmation before a destructive action.
-    if (!window.confirm("Are you sure you want to clear all settings and cached data for WP Vital Signs? This action cannot be undone.")) {
+    if (!window.confirm("Are you sure you want to clear all settings and cached data for Vital Signs? This action cannot be undone.")) {
       return;
     }
 
@@ -231,7 +231,7 @@ const Home = ({ vulnerabilities, coreFileScan, status, toast }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-WP-Nonce': VS_DATA.nonce, // Your global nonce
+          'X-WP-Nonce': VITAL_SIGNS_DATA.nonce, // Your global nonce
         },
       });
 
@@ -264,7 +264,7 @@ const Home = ({ vulnerabilities, coreFileScan, status, toast }) => {
 
   useEffect(() => {
     fetch('/wp-json/vital-signs/v1/last-checks', {
-      headers: { 'X-WP-Nonce': VS_DATA.nonce }
+      headers: { 'X-WP-Nonce': VITAL_SIGNS_DATA.nonce }
     }).then(res => res.json())
       .then(setLastChecks);
   }, []);
@@ -274,7 +274,7 @@ const Home = ({ vulnerabilities, coreFileScan, status, toast }) => {
 
   return (
     <div className="w-full bg-secondary p-4">
-      <TopCard title="WP Vital Signs | Home" subtitle="An overview of your site's health and security" />
+      <TopCard title="Vital Signs | Home" subtitle="An overview of your site's health and security" />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {lastChecks?.loading ? <Loading /> : <VulnerabilityCard data={lastChecks.last_vulnerability_check} />}

@@ -222,14 +222,25 @@ const VulnerabilityTable = ({ title, data, onAction }) => {
                         </a>
                       )}
 
-                      <button
+                      <a
+                        href="/wp-admin/plugins.php"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Go to Plugins page to deactivate"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+                      >
+                        <AlertTriangle className="w-3 h-3" />
+                        Deactivate
+                      </a>
+
+                      {/* <button
                         onClick={() => onAction('deactivate', item, index)}
                         title="Deactivate plugin"
                         className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
                       >
                         <AlertTriangle className="w-3 h-3" />
                         Deactivate
-                      </button>
+                      </button> */}
 
                       {item.details_link && (
                         <a
@@ -263,7 +274,7 @@ const VulnerabilityDashboard = ({ toast }) => {
 
   useEffect(() => {
     fetch('/wp-json/vital-signs/v1/vulnerabilities', {
-      headers: { 'X-WP-Nonce': VS_DATA.nonce }
+      headers: { 'X-WP-Nonce': VITAL_SIGNS_DATA.nonce }
     })
       .then(res => res.json())
       .then(setData);
@@ -278,7 +289,7 @@ const VulnerabilityDashboard = ({ toast }) => {
       const response = await fetch('/wp-json/vital-signs/v1/deactivate', {
         method: 'POST',
         headers: {
-          'X-WP-Nonce': VS_DATA.nonce,
+          'X-WP-Nonce': VITAL_SIGNS_DATA.nonce,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ slug }),
@@ -446,22 +457,22 @@ const VulnerabilityDashboard = ({ toast }) => {
   const tableData = processDataForTable(data);
 
   return (
-        <div className="w-full bg-secondary p-4">
+    <div className="w-full bg-secondary p-4">
 
-        <TopCard
-          title="WP Vital Signs | Vulnerabilities"
-          subtitle="Monitor and resolve plugin and theme vulnerabilities"
-        />
+      <TopCard
+        title="Vital Signs | Vulnerabilities"
+        subtitle="Monitor and resolve plugin and theme vulnerabilities"
+      />
 
 
-        <SummaryStats data={data} />
+      <SummaryStats data={data} />
 
-        <VulnerabilityTable
-          title="Plugin Vulnerabilities"
-          data={tableData}
-          onAction={handleAction}
-        />
-      </div>
+      <VulnerabilityTable
+        title="Plugin Vulnerabilities"
+        data={tableData}
+        onAction={handleAction}
+      />
+    </div>
 
   );
 };
