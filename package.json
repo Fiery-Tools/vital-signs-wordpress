@@ -1,6 +1,6 @@
 {
   "name": "wp-vital-signs",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A WordPress plugin that monitors vital signs.",
   "main": "wp-vital-signs.php",
   "type": "module",

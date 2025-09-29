@@ -3,7 +3,7 @@
  * Plugin Name:       Vital Signs
  * Plugin URI:        https://fiery.tools/plugins/vital-signs
  * Description:       A lightweight yet powerful security and monitoring tool to keep your WordPress site healthy. Scan core files, check for vulnerabilities, and view a system status report.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Author:            Fiery Tools
  * Author URI:        https://fiery.tools
  * License:           GPLv2 or later
