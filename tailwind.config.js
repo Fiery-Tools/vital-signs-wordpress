@@ -3,7 +3,7 @@ export default {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
-  important: '#vs-plugin-wrapper',
+  important: '#vital-signs-plugin-wrapper',
 
   theme: {
     extend: {

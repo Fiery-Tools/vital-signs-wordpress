@@ -12,7 +12,7 @@ A powerful security and health monitoring tool. Scan core files, check for plugi
 
 == Description ==
 
-Vital Signs provides a suite of powerful security tools Including Vulnerabilities scan and Core-files checksum scanner.
+Vital Signs provides a suite of powerful security tools Including Vulnerabilities scan and Core-files checksum scanner. Vital Signs is an open-source security plugin. You can view the source code on GitHub.
 
 **Core Features:**
 
@@ -28,6 +28,7 @@ Whether you're a developer managing client sites or a site owner who values secu
 1.  Upload the `vital-signs` folder to the `/wp-content/plugins/` directory.
 2.  Activate the plugin through the 'Plugins' menu in WordPress.
 3.  Find the "Vital Signs" menu item in your WordPress admin dashboard to access the scanner and reports.
+
 
 == Frequently Asked Questions ==
 

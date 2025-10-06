@@ -5,7 +5,7 @@
 @tailwind utilities;
 
 
-#vs-plugin-wrapper {
+#vital-signs-plugin-wrapper {
   all: initial;
   display: block; /* Or your desired display type */
   font-family: system-ui, sans-serif;
@@ -13,7 +13,7 @@
   line-height: 1.5; /* It's good practice to reset line-height */
 }
 
-#vs-plugin-wrapper :where(h1, h2, h3, h4, p, a, ul, ol, li, button, input) {
+#vital-signs-plugin-wrapper :where(h1, h2, h3, h4, p, a, ul, ol, li, button, input) {
   margin: revert;
   padding: revert;
   background: revert;

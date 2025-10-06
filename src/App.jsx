@@ -75,17 +75,17 @@ export default function App() {
   }, []);
 
   if (!status) return (
-        <div id="vs-plugin-wrapper">
-      <div id="vs-app" className="min-h-screen bg-primary">
+        <div id="vital-signs-plugin-wrapper">
+      <div id="vital-signs-app" className="min-h-screen bg-primary">
     <MainLoader/>
     </div>
     </div>
   );
 
   return (
-    <div id="vs-plugin-wrapper">
+    <div id="vital-signs-plugin-wrapper">
 
-      <div id="vs-app" className="min-h-screen bg-primary">
+      <div id="vital-signs-app" className="min-h-screen bg-primary">
         {/* Tab Navigation */}
         <Header tabs={navigationTabs} currentPath={location.pathname} />
 

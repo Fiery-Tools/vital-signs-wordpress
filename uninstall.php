@@ -11,7 +11,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 }
 
 // Define the name of the option to be deleted.
-$option_name = 'wpvs_settings';
+$option_name = 'vital_signs_settings';
 
 // Delete the option from the database.
 delete_option( $option_name );

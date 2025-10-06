@@ -6,7 +6,7 @@ class Vital_Signs
   private $is_dev;
   private static $instance;
   private $settings;
-  const OPTION_NAME = 'wpVITAL_SIGNS_settings';
+  const OPTION_NAME = 'vital_signs_settings';
 
   /**
    * Ensures only one instance of the class is loaded.
@@ -50,7 +50,7 @@ class Vital_Signs
 
       // Main JS
       wp_enqueue_script(
-        'vs-admin-js',
+        'vital-signs-admin-js',
         VITAL_SIGNS_PLUGIN_URL . 'build/' . $main_entry['file'],
         [],
         null,
@@ -60,12 +60,12 @@ class Vital_Signs
       // Main CSS (if exists)
       foreach ($main_entry['css'] as $css_file) {
         wp_enqueue_style(
-          'vs-admin-css' . $css_file,
+          'vital-signs-admin-css' . $css_file,
           VITAL_SIGNS_PLUGIN_URL . 'build/' . $css_file
         );
       }
 
-      wp_localize_script('vs-admin-js', 'VITAL_SIGNS_DATA', [
+      wp_localize_script('vital-signs-admin-js', 'VITAL_SIGNS_DATA', [
         'rest_url' => rest_url('vital-signs/v1'),
         'nonce'  => wp_create_nonce('wp_rest')
       ]);
@@ -90,7 +90,7 @@ class Vital_Signs
     ?>
     <div class="wrap">
 
-      <div id="vs-admin-root"></div>
+      <div id="vital-signs-admin-root"></div>
     </div>
 <?php
   }
@@ -182,7 +182,7 @@ class Vital_Signs
 
     // Add the option to the database. The 'add_option' function
     // will not update the value if the option already exists.
-    add_option('wpVITAL_SIGNS_settings', $default_settings, '', 'yes');
+    add_option('vital_signs_settings', $default_settings, '', 'yes');
   }
 
   public function delete_all_settings()
